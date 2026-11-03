@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Modal,
   Animated,
+  Switch,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -53,10 +54,17 @@ export default function App() {
   // Dashboard / Connection State
   const [connectionState, setConnectionState] = useState<'connected' | 'outOfRange' | 'searching'>('connected');
   const [batteryLevel, setBatteryLevel] = useState(82);
-  const [safeRangeLimit, setSafeRangeLimit] = useState(10); // meters
+
+  // Safe Range Settings State (5, 10, or 20 meters)
+  const [safeRangePreset, setSafeRangePreset] = useState<number>(10);
+
+  // Alerts Toggle States
+  const [alertOutOfRange, setAlertOutOfRange] = useState(true);
+  const [alertLowBattery, setAlertLowBattery] = useState(true);
+  const [alertPanic, setAlertPanic] = useState(true); // Always on
+  const [alertConnectionLost, setAlertConnectionLost] = useState(true);
 
   // Modals
-  const [safeRangeModalVisible, setSafeRangeModalVisible] = useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [ringingActive, setRingingActive] = useState(false);
 
@@ -70,9 +78,6 @@ export default function App() {
   const pulseAnim = useState(new Animated.Value(1))[0];
 
   useEffect(() => {
-    // Vibration Pattern Note for Panic Mode:
-    // Required continuous vibration pattern for maximum attention:
-    // e.g., Vibrate: [0, 500, 200, 500, 200, 1000] (Platform.OS === 'android' or Expo Haptics)
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -144,7 +149,15 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={[styles.safeArea, alertMode === 'panic' && mainTab === 'alerts' && currentScreen === 'dashboard' ? { backgroundColor: PANIC_RED } : null]} edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          alertMode === 'panic' && mainTab === 'alerts' && currentScreen === 'dashboard'
+            ? { backgroundColor: PANIC_RED }
+            : null,
+        ]}
+        edges={['top', 'left', 'right']}
+      >
         {/* NOTE: STRICTLY NO MOBILE STATUS BAR COMPONENT RENDERING AT TOP */}
 
         {/* 1. AUTH SCREEN */}
@@ -349,7 +362,8 @@ export default function App() {
 
               <View style={styles.footerContainer}>
                 <Text style={styles.footerText}>
-                  By continuing you agree to our <Text style={styles.footerLink}>Terms</Text> & <Text style={styles.footerLink}>Privacy Policy</Text>
+                  By continuing you agree to our <Text style={styles.footerLink}>Terms</Text> &{' '}
+                  <Text style={styles.footerLink}>Privacy Policy</Text>
                 </Text>
               </View>
             </ScrollView>
@@ -395,10 +409,7 @@ export default function App() {
               </View>
 
               <TouchableOpacity
-                style={[
-                  styles.pillButton,
-                  pairingState === 'paired' && styles.pillButtonSuccess,
-                ]}
+                style={[styles.pillButton, pairingState === 'paired' && styles.pillButtonSuccess]}
                 onPress={handleStartPairing}
                 disabled={pairingState === 'pairing'}
                 activeOpacity={0.85}
@@ -419,13 +430,14 @@ export default function App() {
             <View style={styles.privacyBox}>
               <Ionicons name="shield-checkmark-outline" size={20} color={PRIMARY_TEAL} style={{ marginRight: 8 }} />
               <Text style={styles.privacyText}>
-                A Bluetooth wearable cannot see where a child is; it only tells you how near the child is to your phone. Please ensure Bluetooth permissions are enabled.
+                A Bluetooth wearable cannot see where a child is; it only tells you how near the child is to your
+                phone. Please ensure Bluetooth permissions are enabled.
               </Text>
             </View>
           </ScrollView>
         )}
 
-        {/* 3. DASHBOARD / HOME & ALERTS TABS */}
+        {/* 3. DASHBOARD / HOME, ALERTS & SETTINGS TABS */}
         {currentScreen === 'dashboard' && (
           <View style={styles.dashboardRoot}>
             {/* HOME TAB */}
@@ -438,13 +450,17 @@ export default function App() {
                       style={[styles.simBtn, connectionState === 'connected' && styles.simBtnActive]}
                       onPress={() => setConnectionState('connected')}
                     >
-                      <Text style={[styles.simText, connectionState === 'connected' && styles.simTextActive]}>Near</Text>
+                      <Text style={[styles.simText, connectionState === 'connected' && styles.simTextActive]}>
+                        Near
+                      </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.simBtn, connectionState === 'outOfRange' && styles.simBtnCoralActive]}
                       onPress={() => setConnectionState('outOfRange')}
                     >
-                      <Text style={[styles.simText, connectionState === 'outOfRange' && styles.simTextCoralActive]}>Out</Text>
+                      <Text style={[styles.simText, connectionState === 'outOfRange' && styles.simTextCoralActive]}>
+                        Out
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -501,7 +517,7 @@ export default function App() {
                     <View style={styles.pulseRingInner}>
                       <MaterialCommunityIcons name="shield-heart" size={42} color={PRIMARY_TEAL} />
                       <Text style={styles.distanceTypography}>
-                        {connectionState === 'outOfRange' ? '> 15 m' : '4 m'}
+                        {connectionState === 'outOfRange' ? `> ${safeRangePreset + 5} m` : '4 m'}
                       </Text>
                       <Text style={styles.zoneDescriptorLabel}>
                         {connectionState === 'outOfRange' ? 'Far zone' : 'Near zone'}
@@ -509,7 +525,9 @@ export default function App() {
                     </View>
                   </View>
                   <View style={styles.cardFooterInfo}>
-                    <Text style={styles.infoBadgeText}>Battery {batteryLevel}% · Safe range {safeRangeLimit}m</Text>
+                    <Text style={styles.infoBadgeText}>
+                      Battery {batteryLevel}% · Safe range {safeRangePreset}m
+                    </Text>
                   </View>
                 </View>
 
@@ -527,7 +545,6 @@ export default function App() {
                     </Text>
                   </TouchableOpacity>
 
-                  {/* Trigger Panic Alert Button */}
                   <TouchableOpacity
                     style={styles.triggerPanicBtn}
                     onPress={() => {
@@ -550,7 +567,6 @@ export default function App() {
                   alertMode === 'panic' ? styles.alertPanicBg : styles.alertRangeBg,
                 ]}
               >
-                {/* Alert Mode Switcher Header */}
                 <View style={styles.alertModeSwitcher}>
                   <TouchableOpacity
                     style={[styles.modeSwitchBtn, alertMode === 'panic' && styles.modeSwitchBtnActivePanic]}
@@ -564,7 +580,12 @@ export default function App() {
                     style={[styles.modeSwitchBtn, alertMode === 'outOfRange' && styles.modeSwitchBtnActiveRange]}
                     onPress={() => setAlertMode('outOfRange')}
                   >
-                    <Text style={[styles.modeSwitchText, alertMode === 'outOfRange' && styles.modeSwitchTextActiveRange]}>
+                    <Text
+                      style={[
+                        styles.modeSwitchText,
+                        alertMode === 'outOfRange' && styles.modeSwitchTextActiveRange,
+                      ]}
+                    >
                       Out of Range
                     </Text>
                   </TouchableOpacity>
@@ -572,16 +593,13 @@ export default function App() {
 
                 <ScrollView contentContainerStyle={styles.alertScrollContent} showsVerticalScrollIndicator={false}>
                   {alertMode === 'panic' ? (
-                    /* 1. PANIC ALERT MODE (HIGH URGENCY) */
                     <View style={styles.panicContentContainer}>
                       <Animated.View style={[styles.panicPulseCircle, { transform: [{ scale: pulseAnim }] }]}>
                         <Ionicons name="warning" size={56} color="#FFFFFF" />
                       </Animated.View>
 
                       <Text style={styles.panicTitle}>PANIC ALERT</Text>
-                      <Text style={styles.panicSubtitle}>
-                        {childName} · Emergency button pressed
-                      </Text>
+                      <Text style={styles.panicSubtitle}>{childName} · Emergency button pressed</Text>
 
                       <View style={styles.panicMetadataBox}>
                         <View style={styles.metaRow}>
@@ -615,7 +633,6 @@ export default function App() {
                       </View>
                     </View>
                   ) : (
-                    /* 2. NORMAL OUT-OF-RANGE ALERT MODE (MODERATE URGENCY) */
                     <View style={styles.rangeContentContainer}>
                       <View style={styles.rangeBadgeIcon}>
                         <MaterialCommunityIcons name="signal-off" size={40} color={ACCENT_CORAL} />
@@ -623,7 +640,7 @@ export default function App() {
 
                       <Text style={styles.rangeTitle}>Child is out of safe range</Text>
                       <Text style={styles.rangeSubtitle}>
-                        {childName} has exceeded the {safeRangeLimit}m safety boundary.
+                        {childName} has exceeded the {safeRangePreset}m safety boundary.
                       </Text>
 
                       <View style={styles.rangeMetadataCard}>
@@ -666,26 +683,169 @@ export default function App() {
               </View>
             )}
 
+            {/* SETTINGS TAB: SAFE RANGE & SETTINGS SCREEN */}
             {mainTab === 'settings' && (
-              <ScrollView contentContainerStyle={styles.dashboardScrollContent} showsVerticalScrollIndicator={false}>
-                <Text style={styles.screenTitle}>Settings</Text>
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingText}>Child Name</Text>
-                  <Text style={styles.settingValue}>{childName}</Text>
+              <ScrollView contentContainerStyle={styles.settingsScrollContent} showsVerticalScrollIndicator={false}>
+                {/* 1. Header Section */}
+                <View style={styles.settingsSubHeader}>
+                  <TouchableOpacity
+                    style={styles.backArrowBtn}
+                    onPress={() => setMainTab('home')}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="chevron-back" size={24} color={TEXT_DARK} />
+                  </TouchableOpacity>
+                  <Text style={styles.settingsScreenTitle}>Safe Range & Settings</Text>
                 </View>
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingText}>Bluetooth Tether</Text>
-                  <Text style={[styles.settingValue, { color: PRIMARY_TEAL }]}>Connected</Text>
+
+                {/* 2. Section 1: Safe Range Settings */}
+                <View style={styles.settingsSectionCard}>
+                  <Text style={styles.sectionHeaderTitle}>Safe range</Text>
+                  <Text style={styles.sectionHeaderSubtitle}>Alert me when the wearable is further than:</Text>
+
+                  <View style={styles.presetCardsContainer}>
+                    {[
+                      { meters: 5, label: 'Short', desc: '5 meters' },
+                      { meters: 10, label: 'Medium', desc: '10 meters' },
+                      { meters: 20, label: 'Long', desc: '20 meters' },
+                    ].map((preset) => {
+                      const isSelected = safeRangePreset === preset.meters;
+                      return (
+                        <TouchableOpacity
+                          key={preset.meters}
+                          style={[styles.presetCard, isSelected && styles.presetCardSelected]}
+                          onPress={() => setSafeRangePreset(preset.meters)}
+                          activeOpacity={0.85}
+                        >
+                          <View style={styles.presetCardTopRow}>
+                            <Text style={[styles.presetCardLabel, isSelected && styles.presetCardLabelSelected]}>
+                              {preset.label}
+                            </Text>
+                            {isSelected && <Ionicons name="checkmark-circle" size={20} color={PRIMARY_TEAL} />}
+                          </View>
+                          <Text style={[styles.presetCardDesc, isSelected && styles.presetCardDescSelected]}>
+                            {preset.desc}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <Text style={styles.helperNoteText}>
+                    Distance is approximate and based on Bluetooth signal strength, which changes with walls, bodies and
+                    the phone's position.
+                  </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.logoutButton}
-                  onPress={() => {
-                    setCurrentScreen('auth');
-                    setPairingState('idle');
-                  }}
-                >
-                  <Text style={styles.logoutButtonText}>Log Out</Text>
-                </TouchableOpacity>
+
+                {/* 3. Section 2: Alerts & Notifications */}
+                <View style={styles.settingsSectionCard}>
+                  <Text style={styles.sectionHeaderTitle}>Alerts</Text>
+
+                  <View style={styles.toggleRow}>
+                    <View style={{ flex: 1, marginRight: 12 }}>
+                      <Text style={styles.toggleRowTitle}>Out of range alerts</Text>
+                      <Text style={styles.toggleRowDesc}>Notify when {childName} leaves the safety boundary</Text>
+                    </View>
+                    <Switch
+                      value={alertOutOfRange}
+                      onValueChange={setAlertOutOfRange}
+                      trackColor={{ false: '#CBD5E1', true: TEAL_BORDER }}
+                      thumbColor={alertOutOfRange ? PRIMARY_TEAL : '#F1F5F9'}
+                    />
+                  </View>
+
+                  <View style={styles.toggleRow}>
+                    <View style={{ flex: 1, marginRight: 12 }}>
+                      <Text style={styles.toggleRowTitle}>Low battery alerts</Text>
+                      <Text style={styles.toggleRowDesc}>Notify when band battery drops below 20%</Text>
+                    </View>
+                    <Switch
+                      value={alertLowBattery}
+                      onValueChange={setAlertLowBattery}
+                      trackColor={{ false: '#CBD5E1', true: TEAL_BORDER }}
+                      thumbColor={alertLowBattery ? PRIMARY_TEAL : '#F1F5F9'}
+                    />
+                  </View>
+
+                  <View style={styles.toggleRow}>
+                    <View style={{ flex: 1, marginRight: 12 }}>
+                      <Text style={styles.toggleRowTitle}>Panic alerts</Text>
+                      <Text style={styles.toggleRowDesc}>Always on loud sound & vibration for emergencies</Text>
+                    </View>
+                    <Switch
+                      value={alertPanic}
+                      onValueChange={setAlertPanic}
+                      disabled={true} // Always on
+                      trackColor={{ false: '#CBD5E1', true: TEAL_BORDER }}
+                      thumbColor={PRIMARY_TEAL}
+                    />
+                  </View>
+
+                  <View style={[styles.toggleRow, { borderBottomWidth: 0, marginBottom: 0 }]}>
+                    <View style={{ flex: 1, marginRight: 12 }}>
+                      <Text style={styles.toggleRowTitle}>Connection lost alerts</Text>
+                      <Text style={styles.toggleRowDesc}>Notify if Bluetooth signal is interrupted</Text>
+                    </View>
+                    <Switch
+                      value={alertConnectionLost}
+                      onValueChange={setAlertConnectionLost}
+                      trackColor={{ false: '#CBD5E1', true: TEAL_BORDER }}
+                      thumbColor={alertConnectionLost ? PRIMARY_TEAL : '#F1F5F9'}
+                    />
+                  </View>
+                </View>
+
+                {/* 4. Section 3: Connected Device */}
+                <View style={styles.settingsSectionCard}>
+                  <Text style={styles.sectionHeaderTitle}>Device</Text>
+
+                  <View style={styles.deviceCardBox}>
+                    <View style={styles.deviceIconBadge}>
+                      <MaterialCommunityIcons name="watch-variant" size={28} color={PRIMARY_TEAL} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.deviceNameText}>SafeTether wearable</Text>
+                      <Text style={styles.deviceMacText}>24:6F:28:AB:12:3D · {batteryLevel}% Battery</Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.unpairButton}
+                    onPress={() => alert('Device unpaired successfully.')}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={ACCENT_CORAL} style={{ marginRight: 8 }} />
+                    <Text style={styles.unpairButtonText}>Unpair Device</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 5. Section 4: App Information & System */}
+                <View style={[styles.settingsSectionCard, { marginBottom: 40 }]}>
+                  <Text style={styles.sectionHeaderTitle}>App</Text>
+
+                  <TouchableOpacity
+                    style={styles.appLinkRow}
+                    onPress={() => alert('Opening Background Monitoring Guide')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.appLinkText}>Keep monitoring running</Text>
+                    <Ionicons name="chevron-forward" size={18} color={TEXT_MUTED} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.appLinkRow}
+                    onPress={() => alert('Opening Privacy Policy & Terms')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.appLinkText}>Privacy Policy & Terms</Text>
+                    <Ionicons name="chevron-forward" size={18} color={TEXT_MUTED} />
+                  </TouchableOpacity>
+
+                  <View style={[styles.appLinkRow, { borderBottomWidth: 0 }]}>
+                    <Text style={styles.appLinkText}>App Version</Text>
+                    <Text style={styles.appVersionText}>v1.0.0</Text>
+                  </View>
+                </View>
               </ScrollView>
             )}
 
@@ -714,7 +874,7 @@ export default function App() {
                 <Ionicons
                   name={mainTab === 'alerts' ? 'notifications' : 'notifications-outline'}
                   size={24}
-                  color={mainTab === 'alerts' ? (alertMode === 'panic' ? '#FFFFFF' : PRIMARY_TEAL) : TEXT_MUTED}
+                  color={mainTab === 'alerts' ? (alertMode === 'panic' && mainTab === 'alerts' ? '#FFFFFF' : PRIMARY_TEAL) : TEXT_MUTED}
                 />
                 <Text
                   style={[
@@ -988,6 +1148,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  rowCentered: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   privacyBox: {
     flexDirection: 'row',
     backgroundColor: TEAL_LIGHT,
@@ -1005,7 +1169,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  /* DASHBOARD & ALERT SCREEN STYLES */
+  /* DASHBOARD STYLES */
   dashboardRoot: {
     flex: 1,
     backgroundColor: BG_COLOR,
@@ -1232,45 +1396,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: TEXT_DARK,
-    marginBottom: 20,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: CARD_BG,
-    padding: 18,
-    borderRadius: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  settingText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: TEXT_DARK,
-  },
-  settingValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: TEXT_MUTED,
-  },
-  logoutButton: {
-    marginTop: 24,
-    backgroundColor: '#FEF2F2',
-    borderRadius: 16,
-    padding: 18,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: ACCENT_CORAL,
-  },
   bottomNavBar: {
     position: 'absolute',
     bottom: 0,
@@ -1302,7 +1427,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  /* FULL-SCREEN ALERT / PANIC NOTIFICATION STYLES */
+  /* ALERT SCREEN STYLES */
   alertScreenContainer: {
     flex: 1,
     paddingHorizontal: 20,
@@ -1527,5 +1652,184 @@ const styles = StyleSheet.create({
     color: TEXT_DARK,
     fontSize: 16,
     fontWeight: '600',
+  },
+
+  /* SAFE RANGE & SETTINGS SCREEN STYLES */
+  settingsScrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 110,
+  },
+  settingsSubHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backArrowBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: CARD_BG,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginRight: 12,
+  },
+  settingsScreenTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: TEXT_DARK,
+  },
+  settingsSectionCard: {
+    backgroundColor: CARD_BG,
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  sectionHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: TEXT_DARK,
+    marginBottom: 4,
+  },
+  sectionHeaderSubtitle: {
+    fontSize: 13,
+    color: TEXT_MUTED,
+    marginBottom: 16,
+  },
+  presetCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  presetCard: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    padding: 14,
+    marginHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#E2E8F0',
+  },
+  presetCardSelected: {
+    borderColor: PRIMARY_TEAL,
+    backgroundColor: TEAL_LIGHT,
+  },
+  presetCardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  presetCardLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: TEXT_DARK,
+  },
+  presetCardLabelSelected: {
+    color: PRIMARY_TEAL,
+  },
+  presetCardDesc: {
+    fontSize: 12,
+    color: TEXT_MUTED,
+    fontWeight: '500',
+  },
+  presetCardDescSelected: {
+    color: PRIMARY_TEAL,
+    fontWeight: '600',
+  },
+  helperNoteText: {
+    fontSize: 12,
+    color: TEXT_MUTED,
+    lineHeight: 18,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  toggleRowTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: TEXT_DARK,
+    marginBottom: 2,
+  },
+  toggleRowDesc: {
+    fontSize: 12,
+    color: TEXT_MUTED,
+  },
+  deviceCardBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  deviceIconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: TEAL_LIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: TEAL_BORDER,
+  },
+  deviceNameText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: TEXT_DARK,
+  },
+  deviceMacText: {
+    fontSize: 12,
+    color: TEXT_MUTED,
+    marginTop: 2,
+  },
+  unpairButton: {
+    flexDirection: 'row',
+    backgroundColor: CORAL_LIGHT,
+    borderWidth: 1,
+    borderColor: CORAL_BORDER,
+    borderRadius: 14,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  unpairButtonText: {
+    color: ACCENT_CORAL,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  appLinkRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  appLinkText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: TEXT_DARK,
+  },
+  appVersionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: TEXT_MUTED,
   },
 });
