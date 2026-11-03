@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Modal,
+  Animated,
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -26,7 +27,8 @@ const TEXT_MUTED = '#64748B';
 const BG_COLOR = '#F8FAFC';
 const CARD_BG = '#FFFFFF';
 const ERROR_COLOR = '#EF4444';
-const SUCCESS_COLOR = '#10B981';
+const PANIC_RED = '#991B1B';
+const PANIC_RED_LIGHT = '#7F1D1D';
 
 export default function App() {
   // Navigation flow state: 'auth' | 'pairing' | 'dashboard'
@@ -48,7 +50,7 @@ export default function App() {
   // Pairing State
   const [pairingState, setPairingState] = useState<'idle' | 'pairing' | 'paired'>('idle');
 
-  // Dashboard / Connection State ('connected' | 'outOfRange' | 'searching')
+  // Dashboard / Connection State
   const [connectionState, setConnectionState] = useState<'connected' | 'outOfRange' | 'searching'>('connected');
   const [batteryLevel, setBatteryLevel] = useState(82);
   const [safeRangeLimit, setSafeRangeLimit] = useState(10); // meters
@@ -60,6 +62,34 @@ export default function App() {
 
   // Main Bottom Navigation Tab ('home' | 'alerts' | 'settings')
   const [mainTab, setMainTab] = useState<'home' | 'alerts' | 'settings'>('home');
+
+  // Alert Screen Mode State ('panic' | 'outOfRange')
+  const [alertMode, setAlertMode] = useState<'panic' | 'outOfRange'>('panic');
+
+  // Pulse animation for Panic mode
+  const pulseAnim = useState(new Animated.Value(1))[0];
+
+  useEffect(() => {
+    // Vibration Pattern Note for Panic Mode:
+    // Required continuous vibration pattern for maximum attention:
+    // e.g., Vibrate: [0, 500, 200, 500, 200, 1000] (Platform.OS === 'android' or Expo Haptics)
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.15,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
 
   const validateEmail = (email: string) => {
     const re = /\S+@\S+\.\S+/;
@@ -114,7 +144,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={[styles.safeArea, alertMode === 'panic' && mainTab === 'alerts' && currentScreen === 'dashboard' ? { backgroundColor: PANIC_RED } : null]} edges={['top', 'left', 'right']}>
         {/* NOTE: STRICTLY NO MOBILE STATUS BAR COMPONENT RENDERING AT TOP */}
 
         {/* 1. AUTH SCREEN */}
@@ -395,224 +425,271 @@ export default function App() {
           </ScrollView>
         )}
 
-        {/* 3. HOME DASHBOARD SCREEN (MAIN APP) */}
+        {/* 3. DASHBOARD / HOME & ALERTS TABS */}
         {currentScreen === 'dashboard' && (
           <View style={styles.dashboardRoot}>
-            <ScrollView
-              contentContainerStyle={styles.dashboardScrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* App Header & Child Profile Section */}
-              <View style={styles.dashHeaderRow}>
-                <Text style={styles.dashAppTitle}>SafeTether</Text>
-                
-                {/* State Simulator Badge (Allows testing Connected, Out of Range, Searching) */}
-                <View style={styles.simControls}>
-                  <TouchableOpacity
-                    style={[styles.simBtn, connectionState === 'connected' && styles.simBtnActive]}
-                    onPress={() => setConnectionState('connected')}
-                  >
-                    <Text style={[styles.simText, connectionState === 'connected' && styles.simTextActive]}>Near</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.simBtn, connectionState === 'outOfRange' && styles.simBtnCoralActive]}
-                    onPress={() => setConnectionState('outOfRange')}
-                  >
-                    <Text style={[styles.simText, connectionState === 'outOfRange' && styles.simTextCoralActive]}>Out</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.simBtn, connectionState === 'searching' && styles.simBtnGrayActive]}
-                    onPress={() => setConnectionState('searching')}
-                  >
-                    <Text style={[styles.simText, connectionState === 'searching' && styles.simTextGrayActive]}>Search</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Child Profile Bar */}
-              <View style={styles.childProfileBar}>
-                <View style={styles.childAvatarCircle}>
-                  <Text style={styles.childAvatarInitial}>{childInitial}</Text>
-                </View>
-                <View style={styles.childInfoContainer}>
-                  <Text style={styles.childProfileName}>{childName}</Text>
-                  <Text style={styles.childDeviceSubtitle}>SafeTether Band #4029</Text>
+            {/* HOME TAB */}
+            {mainTab === 'home' && (
+              <ScrollView contentContainerStyle={styles.dashboardScrollContent} showsVerticalScrollIndicator={false}>
+                <View style={styles.dashHeaderRow}>
+                  <Text style={styles.dashAppTitle}>SafeTether</Text>
+                  <View style={styles.simControls}>
+                    <TouchableOpacity
+                      style={[styles.simBtn, connectionState === 'connected' && styles.simBtnActive]}
+                      onPress={() => setConnectionState('connected')}
+                    >
+                      <Text style={[styles.simText, connectionState === 'connected' && styles.simTextActive]}>Near</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.simBtn, connectionState === 'outOfRange' && styles.simBtnCoralActive]}
+                      onPress={() => setConnectionState('outOfRange')}
+                    >
+                      <Text style={[styles.simText, connectionState === 'outOfRange' && styles.simTextCoralActive]}>Out</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
-                {/* Connection Status Pill Badge */}
-                <View
-                  style={[
-                    styles.statusPill,
-                    connectionState === 'connected'
-                      ? styles.statusPillConnected
-                      : connectionState === 'outOfRange'
-                      ? styles.statusPillOutOfRange
-                      : styles.statusPillSearching,
-                  ]}
-                >
+                <View style={styles.childProfileBar}>
+                  <View style={styles.childAvatarCircle}>
+                    <Text style={styles.childAvatarInitial}>{childInitial}</Text>
+                  </View>
+                  <View style={styles.childInfoContainer}>
+                    <Text style={styles.childProfileName}>{childName}</Text>
+                    <Text style={styles.childDeviceSubtitle}>SafeTether Band #4029</Text>
+                  </View>
                   <View
                     style={[
-                      styles.statusDot,
-                      connectionState === 'connected'
-                        ? styles.dotConnected
-                        : connectionState === 'outOfRange'
-                        ? styles.dotOutOfRange
-                        : styles.dotSearching,
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      styles.statusPillText,
-                      connectionState === 'connected'
-                        ? styles.textConnected
-                        : connectionState === 'outOfRange'
-                        ? styles.textOutOfRange
-                        : styles.textSearching,
+                      styles.statusPill,
+                      connectionState === 'connected' ? styles.statusPillConnected : styles.statusPillOutOfRange,
                     ]}
                   >
-                    {connectionState === 'connected'
-                      ? 'Connected'
-                      : connectionState === 'outOfRange'
-                      ? 'Out of Range'
-                      : 'Searching'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Warning Banner when Out of Range / Low Battery */}
-              {connectionState === 'outOfRange' && (
-                <View style={styles.warningBanner}>
-                  <Ionicons name="warning" size={22} color={ACCENT_CORAL} style={{ marginRight: 10 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.warningTitle}>{childName} is outside the safe range!</Text>
-                    <Text style={styles.warningSubtitle}>Tap below to check last known location or reconnect.</Text>
+                    <View
+                      style={[
+                        styles.statusDot,
+                        connectionState === 'connected' ? styles.dotConnected : styles.dotOutOfRange,
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.statusPillText,
+                        connectionState === 'connected' ? styles.textConnected : styles.textOutOfRange,
+                      ]}
+                    >
+                      {connectionState === 'connected' ? 'Connected' : 'Out of Range'}
+                    </Text>
                   </View>
                 </View>
-              )}
 
-              {batteryLevel < 20 && (
-                <View style={[styles.warningBanner, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-                  <Ionicons name="battery-dead" size={22} color="#D97706" style={{ marginRight: 10 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.warningTitle, { color: '#92400E' }]}>Wearable battery is low ({batteryLevel}%)</Text>
-                    <Text style={[styles.warningSubtitle, { color: '#B45309' }]}>Please recharge the SafeTether band soon.</Text>
+                {connectionState === 'outOfRange' && (
+                  <TouchableOpacity
+                    style={styles.warningBanner}
+                    onPress={() => {
+                      setAlertMode('outOfRange');
+                      setMainTab('alerts');
+                    }}
+                  >
+                    <Ionicons name="warning" size={22} color={ACCENT_CORAL} style={{ marginRight: 10 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.warningTitle}>{childName} is outside the safe range!</Text>
+                      <Text style={styles.warningSubtitle}>Tap to open alert notification screen.</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+
+                <View style={styles.centerIndicatorCard}>
+                  <View style={styles.pulseRingOuter}>
+                    <View style={styles.pulseRingInner}>
+                      <MaterialCommunityIcons name="shield-heart" size={42} color={PRIMARY_TEAL} />
+                      <Text style={styles.distanceTypography}>
+                        {connectionState === 'outOfRange' ? '> 15 m' : '4 m'}
+                      </Text>
+                      <Text style={styles.zoneDescriptorLabel}>
+                        {connectionState === 'outOfRange' ? 'Far zone' : 'Near zone'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.cardFooterInfo}>
+                    <Text style={styles.infoBadgeText}>Battery {batteryLevel}% · Safe range {safeRangeLimit}m</Text>
                   </View>
                 </View>
-              )}
 
-              {/* Center Circular Distance Indicator (Main Focus) */}
+                <View style={styles.actionsContainer}>
+                  <TouchableOpacity
+                    style={styles.ringWearableButton}
+                    onPress={() => {
+                      setRingingActive(true);
+                      setTimeout(() => setRingingActive(false), 3000);
+                    }}
+                  >
+                    <Ionicons name="notifications" size={22} color="#FFFFFF" style={{ marginRight: 10 }} />
+                    <Text style={styles.ringButtonText}>
+                      {ringingActive ? 'Ringing Wearable...' : 'Find child (ring the wearable)'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Trigger Panic Alert Button */}
+                  <TouchableOpacity
+                    style={styles.triggerPanicBtn}
+                    onPress={() => {
+                      setAlertMode('panic');
+                      setMainTab('alerts');
+                    }}
+                  >
+                    <Ionicons name="alert-circle" size={22} color="#FFFFFF" style={{ marginRight: 10 }} />
+                    <Text style={styles.triggerPanicText}>Test Panic Alert Mode</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+
+            {/* ALERTS TAB: FULL-SCREEN ALERT / PANIC NOTIFICATION SCREEN */}
+            {mainTab === 'alerts' && (
               <View
                 style={[
-                  styles.centerIndicatorCard,
-                  connectionState === 'outOfRange' && styles.cardOutOfRangeBorder,
+                  styles.alertScreenContainer,
+                  alertMode === 'panic' ? styles.alertPanicBg : styles.alertRangeBg,
                 ]}
               >
-                <View
-                  style={[
-                    styles.pulseRingOuter,
-                    connectionState === 'outOfRange' && styles.pulseRingCoral,
-                  ]}
-                >
-                  <View style={styles.pulseRingInner}>
-                    <MaterialCommunityIcons
-                      name={connectionState === 'outOfRange' ? 'signal-off' : 'shield-heart'}
-                      size={42}
-                      color={connectionState === 'outOfRange' ? ACCENT_CORAL : PRIMARY_TEAL}
-                    />
-                    <Text style={[styles.distanceTypography, connectionState === 'outOfRange' && { color: ACCENT_CORAL }]}>
-                      {connectionState === 'outOfRange'
-                        ? `> ${safeRangeLimit + 5} m`
-                        : connectionState === 'searching'
-                        ? '--'
-                        : `${Math.min(4, safeRangeLimit - 2)} m`}
+                {/* Alert Mode Switcher Header */}
+                <View style={styles.alertModeSwitcher}>
+                  <TouchableOpacity
+                    style={[styles.modeSwitchBtn, alertMode === 'panic' && styles.modeSwitchBtnActivePanic]}
+                    onPress={() => setAlertMode('panic')}
+                  >
+                    <Text style={[styles.modeSwitchText, alertMode === 'panic' && styles.modeSwitchTextActive]}>
+                      Panic Mode
                     </Text>
-                    <Text style={styles.zoneDescriptorLabel}>
-                      {connectionState === 'outOfRange'
-                        ? 'Far zone (Disconnected)'
-                        : connectionState === 'searching'
-                        ? 'Searching for signal...'
-                        : 'Near zone'}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modeSwitchBtn, alertMode === 'outOfRange' && styles.modeSwitchBtnActiveRange]}
+                    onPress={() => setAlertMode('outOfRange')}
+                  >
+                    <Text style={[styles.modeSwitchText, alertMode === 'outOfRange' && styles.modeSwitchTextActiveRange]}>
+                      Out of Range
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
 
-                {/* Footer details inside card */}
-                <View style={styles.cardFooterInfo}>
-                  <View style={styles.infoBadgeItem}>
-                    <Ionicons
-                      name={batteryLevel < 20 ? 'battery-dead' : 'battery-charging'}
-                      size={18}
-                      color={batteryLevel < 20 ? ACCENT_CORAL : PRIMARY_TEAL}
-                      style={{ marginRight: 6 }}
-                    />
-                    <Text style={styles.infoBadgeText}>Battery {batteryLevel}%</Text>
-                  </View>
-                  <View style={styles.infoDivider} />
-                  <View style={styles.infoBadgeItem}>
-                    <Ionicons name="time-outline" size={18} color={TEXT_MUTED} style={{ marginRight: 6 }} />
-                    <Text style={styles.infoBadgeText}>
-                      Safe range {safeRangeLimit} m · last signal 3s ago
-                    </Text>
-                  </View>
-                </View>
+                <ScrollView contentContainerStyle={styles.alertScrollContent} showsVerticalScrollIndicator={false}>
+                  {alertMode === 'panic' ? (
+                    /* 1. PANIC ALERT MODE (HIGH URGENCY) */
+                    <View style={styles.panicContentContainer}>
+                      <Animated.View style={[styles.panicPulseCircle, { transform: [{ scale: pulseAnim }] }]}>
+                        <Ionicons name="warning" size={56} color="#FFFFFF" />
+                      </Animated.View>
+
+                      <Text style={styles.panicTitle}>PANIC ALERT</Text>
+                      <Text style={styles.panicSubtitle}>
+                        {childName} · Emergency button pressed
+                      </Text>
+
+                      <View style={styles.panicMetadataBox}>
+                        <View style={styles.metaRow}>
+                          <Ionicons name="time-outline" size={16} color="#FCA5A5" style={{ marginRight: 6 }} />
+                          <Text style={styles.metaText}>Triggered just now (10:48 AM)</Text>
+                        </View>
+                        <View style={styles.metaRow}>
+                          <Ionicons name="location-outline" size={16} color="#FCA5A5" style={{ marginRight: 6 }} />
+                          <Text style={styles.metaText}>Approx. distance: ~18 meters away</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.alertActionButtons}>
+                        <TouchableOpacity
+                          style={styles.panicPrimaryButton}
+                          onPress={() => alert("Navigating to live radar tracking - 'I'm Coming' initiated!")}
+                          activeOpacity={0.85}
+                        >
+                          <Ionicons name="navigate" size={22} color={PANIC_RED} style={{ marginRight: 8 }} />
+                          <Text style={styles.panicPrimaryButtonText}>I'm Coming</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.panicSecondaryButton}
+                          onPress={() => alert('Dialing emergency services...')}
+                          activeOpacity={0.85}
+                        >
+                          <Ionicons name="call" size={22} color="#FFFFFF" style={{ marginRight: 8 }} />
+                          <Text style={styles.panicSecondaryButtonText}>Call Emergency</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    /* 2. NORMAL OUT-OF-RANGE ALERT MODE (MODERATE URGENCY) */
+                    <View style={styles.rangeContentContainer}>
+                      <View style={styles.rangeBadgeIcon}>
+                        <MaterialCommunityIcons name="signal-off" size={40} color={ACCENT_CORAL} />
+                      </View>
+
+                      <Text style={styles.rangeTitle}>Child is out of safe range</Text>
+                      <Text style={styles.rangeSubtitle}>
+                        {childName} has exceeded the {safeRangeLimit}m safety boundary.
+                      </Text>
+
+                      <View style={styles.rangeMetadataCard}>
+                        <View style={styles.metaRow}>
+                          <Ionicons name="radio" size={16} color={TEXT_MUTED} style={{ marginRight: 6 }} />
+                          <Text style={styles.rangeMetaText}>Distance: about 12 m</Text>
+                        </View>
+                        <View style={styles.metaRow}>
+                          <Ionicons name="time-outline" size={16} color={TEXT_MUTED} style={{ marginRight: 6 }} />
+                          <Text style={styles.rangeMetaText}>Last signal: 12 seconds ago</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.alertActionButtons}>
+                        <TouchableOpacity
+                          style={styles.rangePrimaryButton}
+                          onPress={() => {
+                            setRingingActive(true);
+                            setTimeout(() => setRingingActive(false), 3000);
+                          }}
+                          activeOpacity={0.85}
+                        >
+                          <Ionicons name="notifications" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                          <Text style={styles.rangePrimaryButtonText}>
+                            {ringingActive ? 'Ringing Wearable...' : 'Find child (ring the wearable)'}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.rangeSecondaryButton}
+                          onPress={() => setMainTab('home')}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={styles.rangeSecondaryButtonText}>Dismiss</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </ScrollView>
               </View>
+            )}
 
-              {/* Big Action Buttons at the Bottom */}
-              <View style={styles.actionsContainer}>
-                {/* Primary Action Button 1: Find child (ring wearable) */}
+            {mainTab === 'settings' && (
+              <ScrollView contentContainerStyle={styles.dashboardScrollContent} showsVerticalScrollIndicator={false}>
+                <Text style={styles.screenTitle}>Settings</Text>
+                <View style={styles.settingItem}>
+                  <Text style={styles.settingText}>Child Name</Text>
+                  <Text style={styles.settingValue}>{childName}</Text>
+                </View>
+                <View style={styles.settingItem}>
+                  <Text style={styles.settingText}>Bluetooth Tether</Text>
+                  <Text style={[styles.settingValue, { color: PRIMARY_TEAL }]}>Connected</Text>
+                </View>
                 <TouchableOpacity
-                  style={styles.ringWearableButton}
+                  style={styles.logoutButton}
                   onPress={() => {
-                    setRingingActive(true);
-                    setTimeout(() => setRingingActive(false), 3000);
+                    setCurrentScreen('auth');
+                    setPairingState('idle');
                   }}
-                  activeOpacity={0.85}
                 >
-                  <Ionicons
-                    name={ringingActive ? 'volume-high' : 'notifications'}
-                    size={22}
-                    color="#FFFFFF"
-                    style={{ marginRight: 10 }}
-                  />
-                  <Text style={styles.ringButtonText}>
-                    {ringingActive ? 'Ringing Wearable...' : 'Find child (ring the wearable)'}
-                  </Text>
+                  <Text style={styles.logoutButtonText}>Log Out</Text>
                 </TouchableOpacity>
+              </ScrollView>
+            )}
 
-                {/* Primary Action Button 2: Safe Range */}
-                <TouchableOpacity
-                  style={styles.safeRangeButton}
-                  onPress={() => setSafeRangeModalVisible(true)}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="radio-outline" size={22} color={PRIMARY_TEAL} style={{ marginRight: 10 }} />
-                  <Text style={styles.safeRangeButtonText}>Safe range settings ({safeRangeLimit}m)</Text>
-                </TouchableOpacity>
-
-                {/* Two Additional Utility Buttons */}
-                <View style={styles.utilityRow}>
-                  <TouchableOpacity
-                    style={styles.utilityButtonHalf}
-                    onPress={() => setLocationModalVisible(true)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="location-outline" size={20} color={TEXT_DARK} style={{ marginRight: 8 }} />
-                    <Text style={styles.utilityButtonText}>Last known location</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.utilityButtonHalf, { borderColor: '#FEE2E2', backgroundColor: '#FEF2F2' }]}
-                    onPress={() => alert('Monitoring stopped for this session.')}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="power-outline" size={20} color={ACCENT_CORAL} style={{ marginRight: 8 }} />
-                    <Text style={[styles.utilityButtonText, { color: ACCENT_CORAL }]}>Stop monitoring</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </ScrollView>
-
-            {/* 5. Bottom Navigation Bar */}
+            {/* Bottom Navigation Bar */}
             <View style={styles.bottomNavBar}>
               <TouchableOpacity
                 style={styles.navItem}
@@ -637,9 +714,15 @@ export default function App() {
                 <Ionicons
                   name={mainTab === 'alerts' ? 'notifications' : 'notifications-outline'}
                   size={24}
-                  color={mainTab === 'alerts' ? PRIMARY_TEAL : TEXT_MUTED}
+                  color={mainTab === 'alerts' ? (alertMode === 'panic' ? '#FFFFFF' : PRIMARY_TEAL) : TEXT_MUTED}
                 />
-                <Text style={[styles.navText, mainTab === 'alerts' && styles.navTextActive]}>
+                <Text
+                  style={[
+                    styles.navText,
+                    mainTab === 'alerts' && styles.navTextActive,
+                    alertMode === 'panic' && mainTab === 'alerts' && { color: '#FFFFFF' },
+                  ]}
+                >
                   Alerts
                 </Text>
               </TouchableOpacity>
@@ -659,90 +742,6 @@ export default function App() {
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {/* Safe Range Settings Modal */}
-            <Modal
-              visible={safeRangeModalVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => setSafeRangeModalVisible(false)}
-            >
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContentCard}>
-                  <Text style={styles.modalTitle}>Safe Range Settings</Text>
-                  <Text style={styles.modalSubtitle}>
-                    Choose the maximum distance allowed before alerting you that {childName} is out of range.
-                  </Text>
-
-                  {[5, 10, 15, 25].map((meters) => (
-                    <TouchableOpacity
-                      key={meters}
-                      style={[
-                        styles.rangeOptionItem,
-                        safeRangeLimit === meters && styles.rangeOptionSelected,
-                      ]}
-                      onPress={() => {
-                        setSafeRangeLimit(meters);
-                        setSafeRangeModalVisible(false);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.rangeOptionText,
-                          safeRangeLimit === meters && styles.rangeOptionTextSelected,
-                        ]}
-                      >
-                        {meters} Meters ({meters === 5 ? 'Very Close' : meters === 10 ? 'Standard' : 'Extended'})
-                      </Text>
-                      {safeRangeLimit === meters && (
-                        <Ionicons name="checkmark-circle" size={20} color={PRIMARY_TEAL} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-
-                  <TouchableOpacity
-                    style={styles.modalCloseButton}
-                    onPress={() => setSafeRangeModalVisible(false)}
-                  >
-                    <Text style={styles.modalCloseButtonText}>Done</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
-
-            {/* Last Known Location Modal */}
-            <Modal
-              visible={locationModalVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => setLocationModalVisible(false)}
-            >
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContentCard}>
-                  <View style={{ alignItems: 'center', marginBottom: 16 }}>
-                    <View style={[styles.logoBadge, { backgroundColor: TEAL_LIGHT }]}>
-                      <Ionicons name="location" size={32} color={PRIMARY_TEAL} />
-                    </View>
-                    <Text style={styles.modalTitle}>Last Known Location</Text>
-                    <Text style={styles.modalSubtitle}>
-                      {childName}'s band was last detected near your paired smartphone at home Wi-Fi zone.
-                    </Text>
-                  </View>
-
-                  <View style={styles.locationDetailBox}>
-                    <Text style={styles.locationCoords}>📍 Lat: 37.7749° N, Lon: 122.4194° W</Text>
-                    <Text style={styles.locationTime}>Synced 3 seconds ago via Bluetooth LE</Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.modalCloseButton}
-                    onPress={() => setLocationModalVisible(false)}
-                  >
-                    <Text style={styles.modalCloseButtonText}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
           </View>
         )}
       </SafeAreaView>
@@ -957,11 +956,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: PRIMARY_TEAL,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   pairingStatusTitle: {
     fontSize: 20,
@@ -984,11 +978,6 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: PRIMARY_TEAL,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
     marginTop: 20,
   },
   pillButtonSuccess: {
@@ -998,10 +987,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-  },
-  rowCentered: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   privacyBox: {
     flexDirection: 'row',
@@ -1020,7 +1005,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  /* DASHBOARD STYLES */
+  /* DASHBOARD & ALERT SCREEN STYLES */
   dashboardRoot: {
     flex: 1,
     backgroundColor: BG_COLOR,
@@ -1040,7 +1025,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: TEXT_DARK,
-    letterSpacing: 0.5,
   },
   simControls: {
     flexDirection: 'row',
@@ -1049,7 +1033,7 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   simBtn: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
@@ -1059,21 +1043,12 @@ const styles = StyleSheet.create({
   simBtnCoralActive: {
     backgroundColor: ACCENT_CORAL,
   },
-  simBtnGrayActive: {
-    backgroundColor: TEXT_MUTED,
-  },
   simText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: TEXT_MUTED,
   },
   simTextActive: {
-    color: '#FFFFFF',
-  },
-  simTextCoralActive: {
-    color: '#FFFFFF',
-  },
-  simTextGrayActive: {
     color: '#FFFFFF',
   },
   childProfileBar: {
@@ -1085,11 +1060,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
   },
   childAvatarCircle: {
     width: 48,
@@ -1136,10 +1106,6 @@ const styles = StyleSheet.create({
     backgroundColor: CORAL_LIGHT,
     borderColor: CORAL_BORDER,
   },
-  statusPillSearching: {
-    backgroundColor: '#F1F5F9',
-    borderColor: '#CBD5E1',
-  },
   statusDot: {
     width: 8,
     height: 8,
@@ -1152,9 +1118,6 @@ const styles = StyleSheet.create({
   dotOutOfRange: {
     backgroundColor: ACCENT_CORAL,
   },
-  dotSearching: {
-    backgroundColor: TEXT_MUTED,
-  },
   statusPillText: {
     fontSize: 12,
     fontWeight: '700',
@@ -1164,9 +1127,6 @@ const styles = StyleSheet.create({
   },
   textOutOfRange: {
     color: ACCENT_CORAL,
-  },
-  textSearching: {
-    color: TEXT_MUTED,
   },
   warningBanner: {
     flexDirection: 'row',
@@ -1193,18 +1153,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     padding: 28,
     alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     marginBottom: 20,
-  },
-  cardOutOfRangeBorder: {
-    borderColor: CORAL_BORDER,
-    backgroundColor: '#FFFDFD',
   },
   pulseRingOuter: {
     width: 170,
@@ -1217,10 +1168,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  pulseRingCoral: {
-    backgroundColor: CORAL_LIGHT,
-    borderColor: CORAL_BORDER,
-  },
   pulseRingInner: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1230,7 +1177,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: PRIMARY_TEAL,
     marginTop: 4,
-    letterSpacing: -1,
   },
   zoneDescriptorLabel: {
     fontSize: 13,
@@ -1241,31 +1187,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cardFooterInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#F8FAFC',
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 16,
     width: '100%',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-  },
-  infoBadgeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   infoBadgeText: {
     fontSize: 12,
     fontWeight: '600',
     color: TEXT_MUTED,
-  },
-  infoDivider: {
-    width: 1,
-    height: 14,
-    backgroundColor: '#CBD5E1',
-    marginHorizontal: 12,
   },
   actionsContainer: {
     width: '100%',
@@ -1277,11 +1211,6 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: ACCENT_CORAL,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
     marginBottom: 12,
   },
   ringButtonText: {
@@ -1289,52 +1218,58 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  safeRangeButton: {
+  triggerPanicBtn: {
     flexDirection: 'row',
-    backgroundColor: CARD_BG,
-    borderWidth: 2,
-    borderColor: PRIMARY_TEAL,
+    backgroundColor: PANIC_RED,
     borderRadius: 16,
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: PRIMARY_TEAL,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
     marginBottom: 12,
   },
-  safeRangeButtonText: {
-    color: PRIMARY_TEAL,
+  triggerPanicText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-  utilityRow: {
+  screenTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: TEXT_DARK,
+    marginBottom: 20,
+  },
+  settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  utilityButtonHalf: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: CARD_BG,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 16,
-    height: 50,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 4,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: CARD_BG,
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  utilityButtonText: {
-    fontSize: 13,
+  settingText: {
+    fontSize: 16,
     fontWeight: '600',
     color: TEXT_DARK,
+  },
+  settingValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: TEXT_MUTED,
+  },
+  logoutButton: {
+    marginTop: 24,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 16,
+    padding: 18,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: ACCENT_CORAL,
   },
   bottomNavBar: {
     position: 'absolute',
@@ -1350,10 +1285,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#E2E8F0',
     paddingBottom: Platform.OS === 'ios' ? 10 : 0,
     elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
   },
   navItem: {
     alignItems: 'center',
@@ -1370,93 +1301,231 @@ const styles = StyleSheet.create({
     color: PRIMARY_TEAL,
     fontWeight: '700',
   },
-  modalOverlay: {
+
+  /* FULL-SCREEN ALERT / PANIC NOTIFICATION STYLES */
+  alertScreenContainer: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 90,
+  },
+  alertPanicBg: {
+    backgroundColor: PANIC_RED,
+  },
+  alertRangeBg: {
+    backgroundColor: '#FEF2F2',
+  },
+  alertModeSwitcher: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  modeSwitchBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  modeSwitchBtnActivePanic: {
+    backgroundColor: '#FFFFFF',
+  },
+  modeSwitchBtnActiveRange: {
+    backgroundColor: ACCENT_CORAL,
+  },
+  modeSwitchText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  modeSwitchTextActive: {
+    color: PANIC_RED,
+  },
+  modeSwitchTextActiveRange: {
+    color: '#FFFFFF',
+  },
+  alertScrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingVertical: 20,
   },
-  modalContentCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 24,
-    padding: 24,
+  panicContentContainer: {
+    alignItems: 'center',
     width: '100%',
     maxWidth: 380,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: TEXT_DARK,
+  panicPulseCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: PANIC_RED_LIGHT,
+    borderWidth: 4,
+    borderColor: '#FCA5A5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  panicTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 1.5,
     marginBottom: 8,
     textAlign: 'center',
   },
-  modalSubtitle: {
+  panicSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FEE2E2',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  panicMetadataBox: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  metaText: {
+    fontSize: 14,
+    color: '#FEE2E2',
+    fontWeight: '500',
+  },
+  alertActionButtons: {
+    width: '100%',
+  },
+  panicPrimaryButton: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  panicPrimaryButtonText: {
+    color: PANIC_RED,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  panicSecondaryButton: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 16,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  panicSecondaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  rangeContentContainer: {
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: CARD_BG,
+    borderRadius: 28,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: CORAL_BORDER,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  rangeBadgeIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: CORAL_LIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: CORAL_BORDER,
+  },
+  rangeTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: TEXT_DARK,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  rangeSubtitle: {
     fontSize: 14,
     color: TEXT_MUTED,
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 20,
   },
-  rangeOptionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  rangeMetadataCard: {
     backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 10,
   },
-  rangeOptionSelected: {
-    borderColor: PRIMARY_TEAL,
-    backgroundColor: TEAL_LIGHT,
+  rangeMetaText: {
+    fontSize: 14,
+    color: TEXT_MUTED,
+    fontWeight: '500',
   },
-  rangeOptionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: TEXT_DARK,
-  },
-  rangeOptionTextSelected: {
-    color: PRIMARY_TEAL,
-    fontWeight: '700',
-  },
-  modalCloseButton: {
-    backgroundColor: PRIMARY_TEAL,
-    borderRadius: 14,
-    height: 50,
+  rangePrimaryButton: {
+    flexDirection: 'row',
+    backgroundColor: ACCENT_CORAL,
+    borderRadius: 16,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    marginBottom: 12,
+    shadowColor: ACCENT_CORAL,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  modalCloseButtonText: {
+  rangePrimaryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-  locationDetailBox: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 20,
+  rangeSecondaryButton: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 16,
+    height: 52,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  locationCoords: {
-    fontSize: 15,
-    fontWeight: '700',
+  rangeSecondaryButtonText: {
     color: TEXT_DARK,
-    marginBottom: 4,
-  },
-  locationTime: {
-    fontSize: 12,
-    color: TEXT_MUTED,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
