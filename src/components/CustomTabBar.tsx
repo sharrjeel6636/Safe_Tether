@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/tokens';
 
-export function CustomTabBar({ state, descriptors, navigation }: any) {
+export function CustomTabBar({ state, descriptors }: any) {
   return (
     <View style={styles.tabBarContainer}>
       {state.routes.map((route: any, index: number) => {
@@ -18,14 +19,16 @@ export function CustomTabBar({ state, descriptors, navigation }: any) {
         const isFocused = state.index === index;
 
         const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
-
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
+          if (!isFocused) {
+            if (route.name === 'index') {
+              router.replace('/(tabs)');
+            } else if (route.name === 'alerts') {
+              router.replace('/(tabs)/alerts');
+            } else if (route.name === 'settings') {
+              router.replace('/(tabs)/settings');
+            } else {
+              router.replace(`/(tabs)/${route.name}` as any);
+            }
           }
         };
 

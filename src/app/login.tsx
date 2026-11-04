@@ -14,9 +14,8 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/tokens';
+import { setLocalOnly } from '../mock/data';
 import { DebugRouteList } from '../components/DebugRouteList';
-
-const FIREBASE_READY = false;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -24,9 +23,10 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [firebaseReady, setFirebaseReady] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
 
-  const validateAndSubmit = (isLogin: boolean) => {
+  const validateAndSubmit = () => {
     let isValid = true;
     setEmailError('');
     setPasswordError('');
@@ -46,6 +46,7 @@ export default function LoginScreen() {
       setLoading(true);
       setTimeout(() => {
         setLoading(false);
+        setLocalOnly(false);
         router.replace('/(tabs)');
       }, 800);
     }
@@ -59,7 +60,7 @@ export default function LoginScreen() {
   };
 
   const handleUseWithoutAccount = () => {
-    // Set localOnly or proceed to tabs
+    setLocalOnly(true);
     router.replace('/(tabs)');
   };
 
@@ -75,14 +76,18 @@ export default function LoginScreen() {
       >
         {!showDebug ? (
           <View style={styles.contentWrapper}>
-            {/* Logo Mark */}
-            <View style={styles.logoMarkContainer}>
+            {/* Logo Mark (Tap to toggle Firebase ready state for testing both states) */}
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => setFirebaseReady(!firebaseReady)}
+              style={styles.logoMarkContainer}
+            >
               <View style={styles.outerRing}>
                 <View style={styles.innerRing}>
                   <View style={styles.centerDot} />
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* App Name */}
             <Text style={styles.appName}>SafeTether</Text>
@@ -92,13 +97,18 @@ export default function LoginScreen() {
               Know that your child is close, and get an alert when they are not.
             </Text>
 
-            {!FIREBASE_READY && (
-              <View style={styles.warnBanner}>
+            {/* Warning Banner when firebaseReady is false */}
+            {!firebaseReady && (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => setFirebaseReady(true)}
+                style={styles.warnBanner}
+              >
                 <Ionicons name="alert-circle-outline" size={20} color={Colors.warning} style={styles.warnIcon} />
                 <Text style={styles.warnText}>
-                  Firebase is not set up in this build (google-services.json is missing), so login and cloud backup are not available yet.
+                  Firebase is not set up in this build (google-services.json is missing), so login and cloud backup are not available yet. (Tap to dismiss)
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
 
             {/* Form Fields */}
@@ -136,7 +146,7 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={() => validateAndSubmit(true)}
+                onPress={validateAndSubmit}
                 activeOpacity={0.85}
                 disabled={loading}
               >
@@ -149,7 +159,7 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 style={styles.outlineButton}
-                onPress={() => validateAndSubmit(false)}
+                onPress={validateAndSubmit}
                 activeOpacity={0.85}
                 disabled={loading}
               >
@@ -172,15 +182,28 @@ export default function LoginScreen() {
               Without an account nothing is uploaded: alerts stay on this phone.
             </Text>
 
-            {/* Debug Navigation Toggle */}
-            <TouchableOpacity
-              style={styles.debugToggle}
-              onPress={() => setShowDebug(true)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="bug-outline" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
-              <Text style={styles.debugToggleText}>Open Debug Route List</Text>
-            </TouchableOpacity>
+            {/* Toggle Firebase / Debug Navigation */}
+            <View style={styles.debugActionsRow}>
+              <TouchableOpacity
+                style={styles.debugToggle}
+                onPress={() => setFirebaseReady(!firebaseReady)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="refresh-outline" size={15} color={Colors.primary} style={{ marginRight: 4 }} />
+                <Text style={styles.debugToggleText}>
+                  Toggle Firebase State ({firebaseReady ? 'Ready' : 'Not Set Up'})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.debugToggle}
+                onPress={() => setShowDebug(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="bug-outline" size={15} color={Colors.primary} style={{ marginRight: 4 }} />
+                <Text style={styles.debugToggleText}>Debug Routes</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <View style={styles.debugContainer}>
@@ -366,15 +389,25 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 16,
   },
+  debugActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 8,
+  },
   debugToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.primaryLight,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.primaryBorder,
   },
-    debugToggleText: {
-    fontSize: 13,
+  debugToggleText: {
+    fontSize: 12,
     fontWeight: '600',
     color: Colors.primary,
   },

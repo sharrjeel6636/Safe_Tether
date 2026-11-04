@@ -25,6 +25,14 @@ export interface SafetyAlert {
   resolved: boolean;
 }
 
+export const appState = {
+  localOnly: false,
+};
+
+export function setLocalOnly(value: boolean) {
+  appState.localOnly = value;
+}
+
 export const initialChildProfile: ChildProfile = {
   id: 'child-01',
   name: 'Leo',
