@@ -3,6 +3,7 @@
     "name": "child_safety_project",
     "slug": "child_safety_project",
     "version": "1.0.0",
+    "scheme": "childsafetyproject",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,6 +21,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }

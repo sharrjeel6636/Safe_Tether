@@ -173,7 +173,7 @@ export default function App() {
             >
               <View style={styles.headerContainer}>
                 <View style={styles.logoBadge}>
-                  <MaterialCommunityIcons name="shield-heart" size={36} color={PRIMARY_TEAL} />
+                  <MaterialCommunityIcons name="shield" size={36} color={PRIMARY_TEAL} />
                 </View>
                 <Text style={styles.appName}>SafeTether</Text>
                 <Text style={styles.appSubtitle}>Keep your child close, wherever they go</Text>
@@ -287,7 +287,7 @@ export default function App() {
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>Child's Name</Text>
+                      <Text style={styles.inputLabel}>Child&apos;s Name</Text>
                       <View style={styles.inputWrapper}>
                         <Ionicons name="happy-outline" size={20} color={TEXT_MUTED} style={styles.inputIcon} />
                         <TextInput
@@ -378,7 +378,7 @@ export default function App() {
                 <MaterialCommunityIcons name="bluetooth" size={36} color={PRIMARY_TEAL} />
               </View>
               <Text style={styles.appName}>Pair Your Wearable</Text>
-              <Text style={styles.appSubtitle}>Connect {childName}'s Bluetooth tether band</Text>
+              <Text style={styles.appSubtitle}>Connect {childName}&apos;s Bluetooth tether band</Text>
             </View>
 
             <View style={styles.card}>
@@ -458,7 +458,7 @@ export default function App() {
                       style={[styles.simBtn, connectionState === 'outOfRange' && styles.simBtnCoralActive]}
                       onPress={() => setConnectionState('outOfRange')}
                     >
-                      <Text style={[styles.simText, connectionState === 'outOfRange' && styles.simTextCoralActive]}>
+                      <Text style={[styles.simText, connectionState === 'outOfRange' && styles.simTextActive]}>
                         Out
                       </Text>
                     </TouchableOpacity>
@@ -515,7 +515,7 @@ export default function App() {
                 <View style={styles.centerIndicatorCard}>
                   <View style={styles.pulseRingOuter}>
                     <View style={styles.pulseRingInner}>
-                      <MaterialCommunityIcons name="shield-heart" size={42} color={PRIMARY_TEAL} />
+                      <MaterialCommunityIcons name="shield" size={42} color={PRIMARY_TEAL} />
                       <Text style={styles.distanceTypography}>
                         {connectionState === 'outOfRange' ? `> ${safeRangePreset + 5} m` : '4 m'}
                       </Text>
@@ -615,11 +615,11 @@ export default function App() {
                       <View style={styles.alertActionButtons}>
                         <TouchableOpacity
                           style={styles.panicPrimaryButton}
-                          onPress={() => alert("Navigating to live radar tracking - 'I'm Coming' initiated!")}
+                          onPress={() => alert("Navigating to live radar tracking - 'I&apos;m Coming' initiated!")}
                           activeOpacity={0.85}
                         >
                           <Ionicons name="navigate" size={22} color={PANIC_RED} style={{ marginRight: 8 }} />
-                          <Text style={styles.panicPrimaryButtonText}>I'm Coming</Text>
+                          <Text style={styles.panicPrimaryButtonText}>I&apos;m Coming</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -733,7 +733,7 @@ export default function App() {
 
                   <Text style={styles.helperNoteText}>
                     Distance is approximate and based on Bluetooth signal strength, which changes with walls, bodies and
-                    the phone's position.
+                    the phone&apos;s position.
                   </Text>
                 </View>
 
