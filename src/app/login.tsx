@@ -1,20 +1,65 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { router } from 'expo-router';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/tokens';
 import { DebugRouteList } from '../components/DebugRouteList';
+
+const FIREBASE_READY = false;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [showDebug, setShowDebug] = useState(false);
 
-  const handleLogin = () => {
-    router.replace('/(tabs)');
+  const validateAndSubmit = (isLogin: boolean) => {
+    let isValid = true;
+    setEmailError('');
+    setPasswordError('');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      setEmailError('Enter a valid email address.');
+      isValid = false;
+    }
+
+    if (!password || password.length < 6) {
+      setPasswordError('Password must be at least 6 characters.');
+      isValid = false;
+    }
+
+    if (isValid) {
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+        router.replace('/(tabs)');
+      }, 800);
+    }
+  };
+
+  const handleForgotPassword = () => {
+    Alert.alert(
+      'Forgot Password',
+      'We will send a reset link to your email once cloud login is set up.'
+    );
   };
 
   const handleUseWithoutAccount = () => {
+    // Set localOnly or proceed to tabs
     router.replace('/(tabs)');
   };
 
@@ -23,64 +68,122 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.headerContainer}>
-          <View style={styles.logoBadge}>
-            <MaterialCommunityIcons name="shield" size={40} color={Colors.primary} />
-          </View>
-          <Text style={styles.appName}>SafeTether</Text>
-          <Text style={styles.appSubtitle}>Keep your child close, wherever they go</Text>
-        </View>
-
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {!showDebug ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Welcome Parent</Text>
-            <Text style={styles.cardSubtitle}>Sign in or continue without an account</Text>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="parent@example.com"
-                placeholderTextColor={Colors.textMuted}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-              />
+          <View style={styles.contentWrapper}>
+            {/* Logo Mark */}
+            <View style={styles.logoMarkContainer}>
+              <View style={styles.outerRing}>
+                <View style={styles.innerRing}>
+                  <View style={styles.centerDot} />
+                </View>
+              </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Enter password"
-                placeholderTextColor={Colors.textMuted}
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-              />
+            {/* App Name */}
+            <Text style={styles.appName}>SafeTether</Text>
+
+            {/* Tagline */}
+            <Text style={styles.tagline}>
+              Know that your child is close, and get an alert when they are not.
+            </Text>
+
+            {!FIREBASE_READY && (
+              <View style={styles.warnBanner}>
+                <Ionicons name="alert-circle-outline" size={20} color={Colors.warning} style={styles.warnIcon} />
+                <Text style={styles.warnText}>
+                  Firebase is not set up in this build (google-services.json is missing), so login and cloud backup are not available yet.
+                </Text>
+              </View>
+            )}
+
+            {/* Form Fields */}
+            <View style={styles.formContainer}>
+              <View style={styles.inputGroup}>
+                <TextInput
+                  style={[styles.textInput, emailError ? styles.inputErrorBorder : null]}
+                  placeholder="Email"
+                  placeholderTextColor={Colors.textMuted}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailError) setEmailError('');
+                  }}
+                />
+                {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <TextInput
+                  style={[styles.textInput, passwordError ? styles.inputErrorBorder : null]}
+                  placeholder="Password"
+                  placeholderTextColor={Colors.textMuted}
+                  secureTextEntry
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) setPasswordError('');
+                  }}
+                />
+                {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
+              </View>
+
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => validateAndSubmit(true)}
+                activeOpacity={0.85}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Log in</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.outlineButton}
+                onPress={() => validateAndSubmit(false)}
+                activeOpacity={0.85}
+                disabled={loading}
+              >
+                <Text style={styles.outlineButtonText}>Create account</Text>
+              </TouchableOpacity>
+
+              <View style={styles.compactLinksRow}>
+                <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
+                  <Text style={styles.compactLinkText}>Forgot password</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={handleUseWithoutAccount} activeOpacity={0.7}>
+                  <Text style={styles.compactLinkText}>Use without an account</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <TouchableOpacity style={styles.primaryButton} onPress={handleLogin} activeOpacity={0.85}>
-              <Text style={styles.primaryButtonText}>Login</Text>
-            </TouchableOpacity>
+            {/* Footer */}
+            <Text style={styles.footerText}>
+              Without an account nothing is uploaded: alerts stay on this phone.
+            </Text>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleUseWithoutAccount} activeOpacity={0.85}>
-              <Text style={styles.secondaryButtonText}>Use without an account</Text>
-            </TouchableOpacity>
-
+            {/* Debug Navigation Toggle */}
             <TouchableOpacity
-              style={styles.debugToggleButton}
+              style={styles.debugToggle}
               onPress={() => setShowDebug(true)}
               activeOpacity={0.8}
             >
-              <Ionicons name="bug-outline" size={18} color={Colors.primary} style={{ marginRight: 6 }} />
+              <Ionicons name="bug-outline" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
               <Text style={styles.debugToggleText}>Open Debug Route List</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          <View style={styles.card}>
+          <View style={styles.debugContainer}>
             <TouchableOpacity
               style={styles.backToLoginBtn}
               onPress={() => setShowDebug(false)}
@@ -104,121 +207,179 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    padding: 24,
     justifyContent: 'center',
   },
-  headerContainer: {
+  contentWrapper: {
     alignItems: 'center',
-    marginBottom: 24,
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
+    gap: 12,
   },
-  logoBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: Colors.primaryLight,
+  logoMarkContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Colors.primaryBorder,
+    marginBottom: 4,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  outerRing: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  innerRing: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: Colors.coral,
   },
   appName: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: '800',
-    color: Colors.textDark,
-    marginBottom: 4,
-  },
-  appSubtitle: {
-    fontSize: 15,
-    color: Colors.textMuted,
-    fontWeight: '500',
+    color: Colors.primary,
     textAlign: 'center',
   },
-  card: {
-    backgroundColor: Colors.cardBg,
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
+  tagline: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 10,
   },
-  cardTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.textDark,
+  warnBanner: {
+    width: '100%',
+    flexDirection: 'row',
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 14,
+    padding: 12,
+    alignItems: 'center',
     marginBottom: 4,
   },
-  cardSubtitle: {
-    fontSize: 14,
-    color: Colors.textMuted,
-    marginBottom: 20,
+  warnIcon: {
+    marginRight: 10,
+    alignSelf: 'flex-start',
+    marginTop: 1,
+  },
+  warnText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#92400E',
+    lineHeight: 18,
+  },
+  formContainer: {
+    width: '100%',
+    gap: 12,
   },
   inputGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textDark,
-    marginBottom: 6,
+    width: '100%',
   },
   textInput: {
-    backgroundColor: Colors.sand,
+    backgroundColor: Colors.cardBg,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 14,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     height: 52,
     fontSize: 16,
     color: Colors.textDark,
   },
+  inputErrorBorder: {
+    borderColor: Colors.coral,
+  },
+  errorText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.coral,
+    marginTop: 4,
+    marginLeft: 4,
+  },
   primaryButton: {
     backgroundColor: Colors.primary,
     borderRadius: 14,
-    height: 54,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 12,
+    marginTop: 4,
   },
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-  secondaryButton: {
-    backgroundColor: Colors.sand,
+  outlineButton: {
+    backgroundColor: Colors.cardBg,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 14,
-    height: 54,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
-  secondaryButtonText: {
+  outlineButtonText: {
     color: Colors.textDark,
     fontSize: 16,
     fontWeight: '600',
   },
-  debugToggleButton: {
+  compactLinksRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    backgroundColor: Colors.primaryLight,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.primaryBorder,
+    paddingHorizontal: 4,
+    marginTop: 4,
   },
-  debugToggleText: {
-    color: Colors.primary,
+  compactLinkText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  footerText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 16,
+  },
+  debugToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+    debugToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  debugContainer: {
+    width: '100%',
   },
   backToLoginBtn: {
     flexDirection: 'row',
