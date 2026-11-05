@@ -2,6 +2,7 @@ export interface ChildProfile {
   id: string;
   name: string;
   age: number;
+  note?: string;
   deviceModel: string;
   deviceMac: string;
   batteryLevel: number;
@@ -37,6 +38,7 @@ export const initialChildProfile: ChildProfile = {
   id: 'child-01',
   name: 'Leo',
   age: 7,
+  note: 'Allergic to peanuts. Call mom at 555-0192 if lost.',
   deviceModel: 'SafeTether Band v2',
   deviceMac: '24:6F:28:AB:12:3D',
   batteryLevel: 82,
@@ -49,6 +51,10 @@ export const initialChildProfile: ChildProfile = {
     timestamp: '2 mins ago',
   },
 };
+
+export function updateChildProfile(updates: Partial<ChildProfile>) {
+  Object.assign(initialChildProfile, updates);
+}
 
 export const initialAlerts: SafetyAlert[] = [
   {
