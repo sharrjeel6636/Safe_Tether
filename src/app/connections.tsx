@@ -296,12 +296,14 @@ const styles = StyleSheet.create({
   },
   devStateBtn: {
     flex: 1,
-    paddingVertical: 6,
+    minHeight: 44,
+    paddingVertical: 10,
     borderRadius: 8,
     backgroundColor: Colors.sand,
     borderWidth: 1,
     borderColor: Colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   devStateBtnActive: {
     backgroundColor: Colors.primary,
@@ -453,7 +455,7 @@ const styles = StyleSheet.create({
   },
   pairCompactButton: {
     width: 72,
-    height: 38,
+    height: 44,
     backgroundColor: Colors.primary,
     borderRadius: 10,
     justifyContent: 'center',

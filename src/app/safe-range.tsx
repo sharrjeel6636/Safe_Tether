@@ -238,12 +238,14 @@ const styles = StyleSheet.create({
   },
   devStateBtn: {
     flex: 1,
-    paddingVertical: 6,
+    minHeight: 44,
+    paddingVertical: 10,
     borderRadius: 8,
     backgroundColor: Colors.sand,
     borderWidth: 1,
     borderColor: Colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   devStateBtnActive: {
     backgroundColor: Colors.primary,

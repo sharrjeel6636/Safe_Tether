@@ -39,6 +39,8 @@ export function AppBar({ kind = 'stack', title, subtitle, onBack, rightAction }:
           style={[styles.backButton, isPanic ? styles.panicBackButton : styles.normalBackButton]}
           onPress={handleBack}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <Ionicons
             name="chevron-back"
@@ -97,8 +99,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
