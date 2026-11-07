@@ -323,6 +323,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   textInput: {
+    width: '100%',
     backgroundColor: Colors.cardBg,
     borderWidth: 1,
     borderColor: Colors.border,

@@ -140,6 +140,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   textInput: {
+    width: '100%',
     backgroundColor: Colors.sand,
     borderWidth: 1,
     borderColor: Colors.border,

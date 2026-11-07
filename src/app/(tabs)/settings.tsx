@@ -536,6 +536,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   textInput: {
+    width: '100%',
     height: 48,
     borderRadius: 12,
     borderWidth: 1,
