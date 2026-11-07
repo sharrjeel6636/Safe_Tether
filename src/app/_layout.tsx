@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Colors } from '../theme/tokens';
 import { View, StyleSheet } from 'react-native';
+import { startRuntime } from '../runtime';
 
 export default function RootLayout() {
+  useEffect(() => {
+    startRuntime();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <View style={styles.container}>
