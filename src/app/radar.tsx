@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
-import { initialChildProfile } from '../mock/data';
+import { useMonitor } from '../state/hooks';
 
 export default function RadarScreen() {
+  const { profile } = useMonitor();
   const [radarState, setRadarState] = useState<'medium' | 'far' | 'searching'>('medium');
 
   let isConnected = true;
@@ -152,7 +153,7 @@ export default function RadarScreen() {
 
           {/* Small Muted Note */}
           <Text style={styles.mutedNote}>
-            Safe range: {initialChildProfile.safeRangeMeters} m. The distance is estimated from Bluetooth signal strength, so it is approximate and changes with walls and bodies. It shows how far, never in which direction.
+            Safe range: {profile.safeRangeMeters} m. The distance is estimated from Bluetooth signal strength, so it is approximate and changes with walls and bodies. It shows how far, never in which direction.
           </Text>
         </View>
       </ScrollView>

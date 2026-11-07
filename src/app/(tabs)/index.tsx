@@ -11,7 +11,7 @@ import {
 import { router } from 'expo-router';
 import { Colors } from '../../theme/tokens';
 import { Ionicons } from '@expo/vector-icons';
-import { initialChildProfile } from '../../mock/data';
+import { useMonitor } from '../../state/hooks';
 
 export default function HomeScreen() {
   // States: A (unpaired), B (connected near), C (out of range + low battery), D (monitoring on + bt off + notification missing)
@@ -22,7 +22,8 @@ export default function HomeScreen() {
 
   // Computed state variables based on A, B, C, D
   const isPaired = currentState !== 'A';
-  const childName = initialChildProfile.name || 'Your child';
+  const { profile } = useMonitor();
+  const childName = profile.name || 'Your child';
 
   let linkStatus = 'Connected';
   let statusColor = Colors.success;

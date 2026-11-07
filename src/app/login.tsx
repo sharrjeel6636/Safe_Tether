@@ -14,10 +14,11 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/tokens';
-import { setLocalOnly } from '../mock/data';
+import { useSession } from '../state/hooks';
 import { DebugRouteList } from '../components/DebugRouteList';
 
 export default function LoginScreen() {
+  const { login, loginWithoutAccount } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -46,7 +47,7 @@ export default function LoginScreen() {
       setLoading(true);
       setTimeout(() => {
         setLoading(false);
-        setLocalOnly(false);
+        login(email);
         router.replace('/(tabs)');
       }, 800);
     }
@@ -60,7 +61,7 @@ export default function LoginScreen() {
   };
 
   const handleUseWithoutAccount = () => {
-    setLocalOnly(true);
+    loginWithoutAccount();
     router.replace('/(tabs)');
   };
 

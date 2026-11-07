@@ -12,12 +12,13 @@ import {
 import { router } from 'expo-router';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
-import { initialChildProfile, updateChildProfile } from '../mock/data';
+import { useMonitor } from '../state/hooks';
 
 export default function ProfileScreen() {
-  const [name, setName] = useState(initialChildProfile.name);
-  const [age, setAge] = useState(String(initialChildProfile.age));
-  const [note, setNote] = useState(initialChildProfile.note || '');
+  const { profile, updateProfile } = useMonitor();
+  const [name, setName] = useState(profile.name);
+  const [age, setAge] = useState(String(profile.age));
+  const [note, setNote] = useState(profile.note || '');
 
   const handleAgeChange = (text: string) => {
     // Digits only, max 2 characters
@@ -31,7 +32,7 @@ export default function ProfileScreen() {
     const validAge = isNaN(parsedAge) ? 7 : parsedAge;
     const trimmedNote = note.trim();
 
-    updateChildProfile({
+    updateProfile({
       name: trimmedName,
       age: validAge,
       note: trimmedNote,

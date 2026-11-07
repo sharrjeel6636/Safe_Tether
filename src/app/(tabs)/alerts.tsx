@@ -10,83 +10,10 @@ import {
 import { router } from 'expo-router';
 import { Colors } from '../../theme/tokens';
 import { Ionicons } from '@expo/vector-icons';
-
-interface AlertItem {
-  id: string;
-  type: 'panic' | 'range' | 'battery' | 'connection' | 'buzzer';
-  title: string;
-  synced: boolean;
-  time: string;
-  dayGroup: 'TODAY' | 'YESTERDAY' | '24 OCT 2026';
-  distance: string;
-  phoneLocation: string;
-}
-
-const initialAlertsList: AlertItem[] = [
-  {
-    id: '1',
-    type: 'panic',
-    title: 'Panic button pressed',
-    synced: true,
-    time: '14:32',
-    dayGroup: 'TODAY',
-    distance: 'about 4 m',
-    phoneLocation: '37.7749, -122.4194',
-  },
-  {
-    id: '2',
-    type: 'range',
-    title: 'Out of range',
-    synced: false,
-    time: '12:15',
-    dayGroup: 'TODAY',
-    distance: 'about 14 m',
-    phoneLocation: '37.7752, -122.4189',
-  },
-  {
-    id: '3',
-    type: 'battery',
-    title: 'Low battery',
-    synced: true,
-    time: '09:04',
-    dayGroup: 'TODAY',
-    distance: 'about 2 m',
-    phoneLocation: '37.7749, -122.4194',
-  },
-  {
-    id: '4',
-    type: 'connection',
-    title: 'Connection lost',
-    synced: true,
-    time: '18:45',
-    dayGroup: 'YESTERDAY',
-    distance: 'about 18 m',
-    phoneLocation: '37.7833, -122.4167',
-  },
-  {
-    id: '5',
-    type: 'buzzer',
-    title: 'Buzzer used',
-    synced: true,
-    time: '15:20',
-    dayGroup: 'YESTERDAY',
-    distance: 'about 6 m',
-    phoneLocation: '37.7790, -122.4200',
-  },
-  {
-    id: '6',
-    type: 'range',
-    title: 'Out of range',
-    synced: false,
-    time: '11:10',
-    dayGroup: '24 OCT 2026',
-    distance: 'about 12 m',
-    phoneLocation: '37.7700, -122.4100',
-  },
-];
+import { useAlerts } from '../../state/hooks';
 
 export default function AlertsTabScreen() {
-  const [alerts, setAlerts] = useState<AlertItem[]>(initialAlertsList);
+  const { alerts, clearAlerts } = useAlerts();
   const [selectedFilter, setSelectedFilter] = useState<'All' | 'Panic' | 'Range' | 'Battery' | 'Connection'>('All');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -99,7 +26,7 @@ export default function AlertsTabScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => setAlerts([]),
+          onPress: () => clearAlerts(),
         },
       ]
     );
@@ -109,21 +36,42 @@ export default function AlertsTabScreen() {
   const filteredAlerts = alerts.filter((item) => {
     if (selectedFilter === 'All') return true;
     if (selectedFilter === 'Panic') return item.type === 'panic';
-    if (selectedFilter === 'Range') return item.type === 'range';
-    if (selectedFilter === 'Battery') return item.type === 'battery';
-    if (selectedFilter === 'Connection') return item.type === 'connection' || item.type === 'buzzer';
+    if (selectedFilter === 'Range') return item.type === 'outOfRange';
+    if (selectedFilter === 'Battery') return item.type === 'lowBattery';
+    if (selectedFilter === 'Connection') return item.type === 'connectionLost' || item.type === 'panic';
     return true;
   });
 
   // Group by dayGroup
-  const groups: { dayGroup: string; items: AlertItem[] }[] = [];
+  const groups: { dayGroup: string; items: any[] }[] = [];
   const dayOrder = ['TODAY', 'YESTERDAY', '24 OCT 2026'];
-  dayOrder.forEach((day) => {
-    const items = filteredAlerts.filter((a) => a.dayGroup === day);
+  dayOrder.forEach((day, idx) => {
+    // map items
+    const mappedItems = filteredAlerts.map((a, i) => ({
+      ...a,
+      dayGroup: i === 0 ? 'TODAY' : i === 1 ? 'YESTERDAY' : '24 OCT 2026',
+      time: a.timestamp,
+      distance: 'about 4 m',
+      phoneLocation: '37.7749, -122.4194',
+      synced: true,
+    }));
+    const items = mappedItems.filter((a) => a.dayGroup === day);
     if (items.length > 0) {
       groups.push({ dayGroup: day, items });
     }
   });
+
+  const handlePressAlertItem = (item: any) => {
+    if (item.type === 'panic') {
+      router.push('/panic');
+    } else if (item.type === 'outOfRange' || item.type === 'connectionLost') {
+      router.push('/out-of-range');
+    } else if (item.type === 'lowBattery') {
+      router.push('/low-battery');
+    } else {
+      setExpandedId(expandedId === item.id ? null : item.id);
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -163,25 +111,22 @@ export default function AlertsTabScreen() {
               if (item.type === 'panic') {
                 badgeColor = Colors.coral;
                 iconName = 'warning';
-              } else if (item.type === 'range') {
+              } else if (item.type === 'outOfRange') {
                 badgeColor = Colors.warning;
                 iconName = 'radio';
-              } else if (item.type === 'battery') {
+              } else if (item.type === 'lowBattery') {
                 badgeColor = Colors.warning;
                 iconName = 'battery-dead';
-              } else if (item.type === 'connection') {
+              } else if (item.type === 'connectionLost') {
                 badgeColor = Colors.textMuted;
                 iconName = 'bluetooth';
-              } else if (item.type === 'buzzer') {
-                badgeColor = Colors.primary;
-                iconName = 'volume-high';
               }
 
               return (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.alertCard}
-                  onPress={() => setExpandedId(isExpanded ? null : item.id)}
+                  onPress={() => handlePressAlertItem(item)}
                   activeOpacity={0.9}
                 >
                   <View style={styles.alertMainRow}>

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../../theme/tokens';
-import { appState, setLocalOnly } from '../../mock/data';
+import { useSettings, useSession } from '../../state/hooks';
 
 function CustomSwitch({ value, onValueChange }: { value: boolean; onValueChange: (val: boolean) => void }) {
   return (
@@ -30,12 +30,20 @@ function CustomSwitch({ value, onValueChange }: { value: boolean; onValueChange:
 }
 
 export default function SettingsTabScreen() {
-  // Settings states
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [vibrationEnabled, setVibrationEnabled] = useState(true);
-  const [notificationsAllowed, setNotificationsAllowed] = useState(true);
-  const [batteryOptimisationOff, setBatteryOptimisationOff] = useState(true);
-  const [isLocalOnly, setIsLocalOnly] = useState(appState.localOnly);
+  // Settings states from hooks
+  const {
+    soundEnabled,
+    setSoundEnabled,
+    vibrationEnabled,
+    setVibrationEnabled,
+    notificationsAllowed,
+    setNotificationsAllowed,
+    batteryOptimisationOff,
+    setBatteryOptimisationOff,
+  } = useSettings();
+
+  const { localOnlyMode, logout } = useSession();
+  const [isLocalOnly, setIsLocalOnly] = useState(localOnlyMode);
 
   // Delete account modal states
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -46,7 +54,6 @@ export default function SettingsTabScreen() {
   const handleToggleLocalOnly = () => {
     const next = !isLocalOnly;
     setIsLocalOnly(next);
-    setLocalOnly(next);
   };
 
   const handleLogOutPress = () => {
@@ -59,6 +66,7 @@ export default function SettingsTabScreen() {
           text: isLocalOnly ? 'Clear & Leave' : 'Log out',
           style: 'destructive',
           onPress: () => {
+            logout();
             router.replace('/login');
           },
         },
@@ -118,7 +126,7 @@ export default function SettingsTabScreen() {
           </View>
         </View>
 
-        {/* Card 1: Panic alert (gap 4) */}
+        {/* Card 1: Panic alert (gap 4) - rule: panic alert is always loud, ignore switches for panic */}
         <View style={styles.card}>
           <Text style={styles.cardHeading}>Panic alert</Text>
           <Text style={styles.smallMuted}>
@@ -132,7 +140,7 @@ export default function SettingsTabScreen() {
           <View style={styles.rowItem}>
             <View style={styles.rowTextContainer}>
               <Text style={styles.rowHeading}>Sound</Text>
-              <Text style={styles.smallMuted}>For range, connection and battery alerts</Text>
+              <Text style={styles.smallMuted}>For range, connection and battery alerts (panic alert is always loud)</Text>
             </View>
             <CustomSwitch value={soundEnabled} onValueChange={setSoundEnabled} />
           </View>
@@ -141,7 +149,7 @@ export default function SettingsTabScreen() {
           <View style={[styles.rowItem, styles.rowBorderTop]}>
             <View style={styles.rowTextContainer}>
               <Text style={styles.rowHeading}>Vibration</Text>
-              <Text style={styles.smallMuted}>For range, connection and battery alerts</Text>
+              <Text style={styles.smallMuted}>For range, connection and battery alerts (panic alert is always loud)</Text>
             </View>
             <CustomSwitch value={vibrationEnabled} onValueChange={setVibrationEnabled} />
           </View>

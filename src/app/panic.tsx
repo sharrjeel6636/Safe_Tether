@@ -12,15 +12,16 @@ import {
 import { router } from 'expo-router';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
-import { initialChildProfile } from '../mock/data';
+import { useMonitor } from '../state/hooks';
 
 export default function PanicScreen() {
+  const { profile } = useMonitor();
   // Dev interactive states for testing both connected and disconnected states
   const [isConnected, setIsConnected] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const name = initialChildProfile.name || 'Leo';
+  const name = profile.name || 'Leo';
   const timestampText = '28 Oct 2026, 14:32';
   const zoneText = isConnected
     ? 'Last known zone: Medium'

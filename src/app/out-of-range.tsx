@@ -3,11 +3,12 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { router } from 'expo-router';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
-import { initialChildProfile } from '../mock/data';
+import { useMonitor } from '../state/hooks';
 
 export default function OutOfRangeScreen() {
+  const { profile } = useMonitor();
   const [variant, setVariant] = useState<'outOfRange' | 'connected' | 'lostContact'>('outOfRange');
-  const name = initialChildProfile.name || 'Leo';
+  const name = profile.name || 'Leo';
 
   let headline = `${name} is outside the safe range`;
   let chipLabel = 'Out of range';

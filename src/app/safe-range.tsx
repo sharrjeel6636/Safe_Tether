@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
-import { initialChildProfile, updateChildProfile } from '../mock/data';
+import { useMonitor } from '../state/hooks';
 
 export default function SafeRangeScreen() {
-  const [safeRangeM, setSafeRangeM] = useState<number>(initialChildProfile.safeRangeMeters || 10);
+  const { profile, updateProfile } = useMonitor();
+  const [safeRangeM, setSafeRangeM] = useState<number>(profile.safeRangeMeters || 10);
   const [isConnected, setIsConnected] = useState(true);
   const [calibrating, setCalibrating] = useState(false);
   const [calibrationSeconds, setCalibrationSeconds] = useState(10);
@@ -35,7 +36,7 @@ export default function SafeRangeScreen() {
     if (safeRangeM > 2) {
       const newM = safeRangeM - 1;
       setSafeRangeM(newM);
-      updateChildProfile({ safeRangeMeters: newM });
+      updateProfile({ safeRangeMeters: newM });
     }
   };
 
@@ -43,13 +44,13 @@ export default function SafeRangeScreen() {
     if (safeRangeM < 50) {
       const newM = safeRangeM + 1;
       setSafeRangeM(newM);
-      updateChildProfile({ safeRangeMeters: newM });
+      updateProfile({ safeRangeMeters: newM });
     }
   };
 
   const handleSelectPreset = (m: number) => {
     setSafeRangeM(m);
-    updateChildProfile({ safeRangeMeters: m });
+    updateProfile({ safeRangeMeters: m });
   };
 
   const handleStartCalibration = () => {
