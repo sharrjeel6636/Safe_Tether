@@ -7,35 +7,23 @@ export function isFirebaseConfigured(): boolean {
   try {
     const instance = auth();
     return !!instance;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
 
 export async function signInWithEmail(email: string, pass: string) {
-  try {
-    const userCredential = await auth().signInWithEmailAndPassword(email, pass);
-    return userCredential.user;
-  } catch (error: any) {
-    throw error;
-  }
+  const userCredential = await auth().signInWithEmailAndPassword(email, pass);
+  return userCredential.user;
 }
 
 export async function signUpWithEmail(email: string, pass: string) {
-  try {
-    const userCredential = await auth().createUserWithEmailAndPassword(email, pass);
-    return userCredential.user;
-  } catch (error: any) {
-    throw error;
-  }
+  const userCredential = await auth().createUserWithEmailAndPassword(email, pass);
+  return userCredential.user;
 }
 
 export async function signOutUser() {
-  try {
-    await auth().signOut();
-  } catch (error: any) {
-    throw error;
-  }
+  await auth().signOut();
 }
 
 export async function deleteAccountWithPassword(password: string) {

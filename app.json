@@ -36,7 +36,8 @@
       "react-native-ble-plx",
       "expo-sqlite",
       "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      "@react-native-firebase/auth",
+      "expo-font"
     ]
   }
 }
