@@ -6,8 +6,8 @@ export class SafetyEngine {
   private status: ConnectionStatus = 'connected';
   private profile: ChildProfile = {
     id: 'child-01',
-    name: 'Leo',
-    age: 7,
+    name: '',
+    age: 0,
     safeRangeMeters: 10,
   };
 

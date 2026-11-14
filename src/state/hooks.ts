@@ -21,19 +21,19 @@ export interface ChildProfileState {
 }
 
 const defaultProfile: ChildProfileState = {
-  name: 'Leo',
-  age: 7,
-  note: 'Allergic to peanuts. Call mom at 555-0192 if lost.',
+  name: '',
+  age: 0,
+  note: '',
   safeRangeMeters: 10,
-  deviceModel: 'SafeTether Band v2',
-  deviceMac: '24:6F:28:AB:12:3D',
-  batteryLevel: 82,
-  connectionStatus: 'connected',
+  deviceModel: '',
+  deviceMac: '',
+  batteryLevel: 0,
+  connectionStatus: 'disconnected',
   lastKnownLocation: {
-    latitude: 37.7749,
-    longitude: -122.4194,
-    address: '142 Playground Ave, Parkside',
-    timestamp: '2 mins ago',
+    latitude: 0,
+    longitude: 0,
+    address: '',
+    timestamp: '',
   },
 };
 
@@ -59,35 +59,7 @@ export function useMonitor() {
 }
 
 export function useAlerts() {
-  const [alerts, setAlerts] = useState<SafetyAlert[]>([
-    {
-      id: 'alt-1',
-      type: 'panic',
-      title: 'Panic Alert Triggered',
-      message: 'Leo pressed the emergency SOS button on the wearable.',
-      timestamp: '10:48 AM',
-      severity: 'high',
-      resolved: false,
-    },
-    {
-      id: 'alt-2',
-      type: 'outOfRange',
-      title: 'Out of Safe Range',
-      message: 'Leo moved beyond the 10-meter boundary (~14m away).',
-      timestamp: '9:15 AM',
-      severity: 'medium',
-      resolved: true,
-    },
-    {
-      id: 'alt-3',
-      type: 'lowBattery',
-      title: 'Wearable Battery Low',
-      message: 'Battery level dropped to 18%.',
-      timestamp: 'Yesterday',
-      severity: 'low',
-      resolved: true,
-    },
-  ]);
+  const [alerts, setAlerts] = useState<SafetyAlert[]>([]);
 
   const clearAlerts = () => {
     setAlerts([]);
@@ -127,9 +99,9 @@ export function useSettings() {
 }
 
 export function usePermissions() {
-  const [bluetoothGranted, setBluetoothGranted] = useState(true);
-  const [locationGranted, setLocationGranted] = useState(true);
-  const [notificationsGranted, setNotificationsGranted] = useState(true);
+  const [bluetoothGranted, setBluetoothGranted] = useState(false);
+  const [locationGranted, setLocationGranted] = useState(false);
+  const [notificationsGranted, setNotificationsGranted] = useState(false);
 
   const requestPermissions = async () => {
     setBluetoothGranted(true);
@@ -146,7 +118,7 @@ export function usePermissions() {
 }
 
 export function useSession() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [localOnlyMode, setLocalOnlyMode] = useState(false);
 
   const login = (email: string) => {
