@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
+import { useSettings } from '../state/hooks';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -69,7 +70,8 @@ const brandGuides: BrandGuide[] = [
 ];
 
 export default function BackgroundGuideScreen() {
-  const [batteryExempt, setBatteryExempt] = useState(false);
+  const { batteryOptimisationOff, setBatteryOptimisationOff } = useSettings();
+  const batteryExempt = batteryOptimisationOff;
   const [expandedId, setExpandedId] = useState<string | null>('xiaomi');
 
   const handleToggleAccordion = (id: string) => {
@@ -86,7 +88,7 @@ export default function BackgroundGuideScreen() {
   };
 
   const handleAllowMock = () => {
-    setBatteryExempt(!batteryExempt);
+    setBatteryOptimisationOff(!batteryOptimisationOff);
   };
 
   return (

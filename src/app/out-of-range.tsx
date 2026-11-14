@@ -6,8 +6,9 @@ import { Colors } from '../theme/tokens';
 import { useMonitor } from '../state/hooks';
 
 export default function OutOfRangeScreen() {
-  const { profile } = useMonitor();
-  const [variant, setVariant] = useState<'outOfRange' | 'connected' | 'lostContact'>('outOfRange');
+  const { profile, updateProfile } = useMonitor();
+  const connectionStatus = profile.connectionStatus;
+  const variant = connectionStatus === 'connected' ? 'connected' : connectionStatus === 'searching' ? 'lostContact' : 'outOfRange';
   const name = profile.name || 'Leo';
 
   let headline = `${name} is outside the safe range`;
@@ -40,15 +41,15 @@ export default function OutOfRangeScreen() {
           <View style={styles.devStatesRow}>
             {(
               [
-                { key: 'outOfRange', label: 'Out of Range' },
-                { key: 'connected', label: 'Connected' },
-                { key: 'lostContact', label: 'Lost Contact' },
+                { key: 'outOfRange', label: 'Out of Range', status: 'outOfRange' },
+                { key: 'connected', label: 'Connected', status: 'connected' },
+                { key: 'lostContact', label: 'Lost Contact', status: 'searching' },
               ] as const
             ).map((v) => (
               <TouchableOpacity
                 key={v.key}
                 style={[styles.devStateBtn, variant === v.key && styles.devStateBtnActive]}
-                onPress={() => setVariant(v.key)}
+                onPress={() => updateProfile({ connectionStatus: v.status as any })}
               >
                 <Text style={[styles.devStateText, variant === v.key && styles.devStateTextActive]}>
                   {v.label}

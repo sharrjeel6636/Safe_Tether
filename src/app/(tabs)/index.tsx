@@ -11,18 +11,20 @@ import {
 import { router } from 'expo-router';
 import { Colors } from '../../theme/tokens';
 import { Ionicons } from '@expo/vector-icons';
-import { useMonitor } from '../../state/hooks';
+import { useMonitor, usePermissions } from '../../state/hooks';
 
 export default function HomeScreen() {
-  // States: A (unpaired), B (connected near), C (out of range + low battery), D (monitoring on + bt off + notification missing)
-  const [currentState, setCurrentState] = useState<'A' | 'B' | 'C' | 'D'>('B');
-  const [monitoring, setMonitoring] = useState(false);
+  const { profile, updateProfile, isMonitoring, toggleMonitoring } = useMonitor();
+  const { bluetoothGranted, notificationsGranted } = usePermissions();
+
   const [loadingMonitor, setLoadingMonitor] = useState(false);
   const [showDevMenu, setShowDevMenu] = useState(false);
 
-  // Computed state variables based on A, B, C, D
-  const isPaired = currentState !== 'A';
-  const { profile } = useMonitor();
+  // States for dev switcher representation: A (unpaired), B (connected near), C (out of range + low battery), D (monitoring on + bt off + notification missing)
+  const connectionStatus = profile.connectionStatus;
+  const currentState = connectionStatus === 'disconnected' ? 'A' : connectionStatus === 'connected' ? 'B' : connectionStatus === 'outOfRange' ? 'C' : 'B';
+
+  const isPaired = connectionStatus !== 'disconnected';
   const childName = profile.name || 'Your child';
 
   let linkStatus = 'Connected';
@@ -30,49 +32,44 @@ export default function HomeScreen() {
   let statusBg = '#D1FAE5';
   let distance = '4 m';
   let zone = 'Near zone';
-  let battery = 82;
-  let notificationsMissing = false;
-  let bluetoothOff = false;
-  let batteryLow = false;
+  let battery = profile.batteryLevel ?? 82;
+  let notificationsMissing = !notificationsGranted;
+  let bluetoothOff = !bluetoothGranted;
+  let batteryLow = battery < 20;
   let backgroundProtectionOff = false;
 
-  if (currentState === 'A') {
+  if (connectionStatus === 'disconnected') {
     linkStatus = 'Disconnected';
     statusColor = Colors.coral;
     statusBg = Colors.coralLight;
     distance = '–';
     zone = 'Not connected';
-  } else if (currentState === 'B') {
+  } else if (connectionStatus === 'connected') {
     linkStatus = 'Connected';
     statusColor = Colors.success;
     statusBg = '#D1FAE5';
     distance = '4 m';
     zone = 'Near zone';
-    battery = 82;
-  } else if (currentState === 'C') {
+  } else if (connectionStatus === 'outOfRange') {
     linkStatus = 'Out of range';
     statusColor = Colors.coral;
     statusBg = Colors.coralLight;
     distance = '12 m';
     zone = 'Far zone';
-    battery = 18;
     batteryLow = true;
-  } else if (currentState === 'D') {
+  } else if (connectionStatus === 'searching') {
     linkStatus = 'Searching';
     statusColor = Colors.warning;
     statusBg = '#FEF3C7';
     distance = '–';
     zone = 'Not connected';
-    notificationsMissing = true;
-    bluetoothOff = true;
-    battery = 65;
   }
 
   const handleToggleMonitoring = () => {
     setLoadingMonitor(true);
     setTimeout(() => {
       setLoadingMonitor(false);
-      setMonitoring(!monitoring);
+      toggleMonitoring();
     }, 600);
   };
 
@@ -99,8 +96,13 @@ export default function HomeScreen() {
                 key={st}
                 style={[styles.devStateBtn, currentState === st && styles.devStateBtnActive]}
                 onPress={() => {
-                  setCurrentState(st);
-                  if (st === 'D') setMonitoring(true);
+                  if (st === 'A') updateProfile({ connectionStatus: 'disconnected' });
+                  else if (st === 'B') updateProfile({ connectionStatus: 'connected', batteryLevel: 82 });
+                  else if (st === 'C') updateProfile({ connectionStatus: 'outOfRange', batteryLevel: 18 });
+                  else if (st === 'D') {
+                    updateProfile({ connectionStatus: 'searching', batteryLevel: 65 });
+                    if (!isMonitoring) toggleMonitoring();
+                  }
                 }}
               >
                 <Text style={[styles.devStateText, currentState === st && styles.devStateTextActive]}>
@@ -231,7 +233,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.monitorButton, monitoring ? styles.dangerButton : styles.primaryButton]}
+              style={[styles.monitorButton, isMonitoring ? styles.dangerButton : styles.primaryButton]}
               onPress={handleToggleMonitoring}
               activeOpacity={0.85}
               disabled={loadingMonitor}
@@ -240,7 +242,7 @@ export default function HomeScreen() {
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.primaryButtonText}>
-                  {monitoring ? 'Stop monitoring' : 'Start monitoring'}
+                  {isMonitoring ? 'Stop monitoring' : 'Start monitoring'}
                 </Text>
               )}
             </TouchableOpacity>

@@ -7,7 +7,7 @@ import { useMonitor } from '../state/hooks';
 export default function SafeRangeScreen() {
   const { profile, updateProfile } = useMonitor();
   const [safeRangeM, setSafeRangeM] = useState<number>(profile.safeRangeMeters || 10);
-  const [isConnected, setIsConnected] = useState(true);
+  const isConnected = profile.connectionStatus === 'connected';
   const [calibrating, setCalibrating] = useState(false);
   const [calibrationSeconds, setCalibrationSeconds] = useState(10);
   const [calibratedDbm, setCalibratedDbm] = useState<number | null>(null);
@@ -93,7 +93,7 @@ export default function SafeRangeScreen() {
           <View style={styles.devStatesRow}>
             <TouchableOpacity
               style={[styles.devStateBtn, isConnected && styles.devStateBtnActive]}
-              onPress={() => setIsConnected(true)}
+              onPress={() => updateProfile({ connectionStatus: 'connected' })}
             >
               <Text style={[styles.devStateText, isConnected && styles.devStateTextActive]}>
                 Connected
@@ -101,7 +101,7 @@ export default function SafeRangeScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.devStateBtn, !isConnected && styles.devStateBtnActiveDanger]}
-              onPress={() => setIsConnected(false)}
+              onPress={() => updateProfile({ connectionStatus: 'disconnected' })}
             >
               <Text style={[styles.devStateText, !isConnected && styles.devStateTextActive]}>
                 Disconnected

@@ -4,23 +4,12 @@ import { router } from 'expo-router';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
 import { Ionicons } from '@expo/vector-icons';
+import { useMonitor } from '../state/hooks';
 
 export default function LowBatteryScreen() {
-  const [stateType, setStateType] = useState<'low' | 'charging' | 'fine'>('low');
-
-  let batteryPct = 18;
-  let isCharging = false;
-
-  if (stateType === 'low') {
-    batteryPct = 18;
-    isCharging = false;
-  } else if (stateType === 'charging') {
-    batteryPct = 45;
-    isCharging = true;
-  } else if (stateType === 'fine') {
-    batteryPct = 82;
-    isCharging = false;
-  }
+  const { profile, updateProfile } = useMonitor();
+  const batteryPct = profile.batteryLevel ?? 18;
+  const isCharging = false;
 
   const isLow = batteryPct <= 20 && !isCharging;
   const warnColor = isLow ? Colors.coral : Colors.warning;
@@ -52,16 +41,16 @@ export default function LowBatteryScreen() {
           <Text style={styles.devTitle}>Dev Battery State Switcher:</Text>
           <View style={styles.devStatesRow}>
             {[
-              { key: 'low', label: 'Low (18%)' },
-              { key: 'charging', label: 'Charging (45%)' },
-              { key: 'fine', label: 'Fine (82%)' },
+              { key: 'low', label: 'Low (18%)', val: 18 },
+              { key: 'charging', label: 'Charging (45%)', val: 45 },
+              { key: 'fine', label: 'Fine (82%)', val: 82 },
             ].map((st) => (
               <TouchableOpacity
                 key={st.key}
-                style={[styles.devStateBtn, stateType === st.key && styles.devStateBtnActive]}
-                onPress={() => setStateType(st.key as any)}
+                style={[styles.devStateBtn, batteryPct === st.val && styles.devStateBtnActive]}
+                onPress={() => updateProfile({ batteryLevel: st.val })}
               >
-                <Text style={[styles.devStateText, stateType === st.key && styles.devStateTextActive]}>
+                <Text style={[styles.devStateText, batteryPct === st.val && styles.devStateTextActive]}>
                   {st.label}
                 </Text>
               </TouchableOpacity>

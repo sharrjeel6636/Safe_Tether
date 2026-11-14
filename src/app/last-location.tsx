@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
+import { useMonitor } from '../state/hooks';
 
 // Helper to calculate OSM tile X, Y for lat, lon at zoom 16
 function getTileCoords(lat: number, lon: number, zoom: number = 16) {
@@ -24,11 +25,13 @@ function getTileCoords(lat: number, lon: number, zoom: number = 16) {
 }
 
 export default function LastLocationScreen() {
+  const { profile } = useMonitor();
   const [stateType, setStateType] = useState<'hasLocation' | 'noLocation' | 'loading'>('hasLocation');
   const [mapError, setMapError] = useState(false);
 
-  const lat = 24.86073;
-  const lon = 67.00112;
+  const loc = profile.lastKnownLocation;
+  const lat = loc?.latitude || 24.86073;
+  const lon = loc?.longitude || 67.00112;
   const zoom = 16;
   const { x: tileX, y: tileY } = getTileCoords(lat, lon, zoom);
 

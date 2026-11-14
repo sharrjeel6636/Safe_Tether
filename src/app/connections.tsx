@@ -11,6 +11,7 @@ import {
 import { router } from 'expo-router';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
+import { useMonitor } from '../state/hooks';
 
 interface DiscoveredDevice {
   name: string;
@@ -19,7 +20,9 @@ interface DiscoveredDevice {
 }
 
 export default function ConnectionsScreen() {
-  const [deviceId, setDeviceId] = useState<string | null>('24:6F:28:AB:12:3C');
+  const { profile, updateProfile } = useMonitor();
+  const deviceId = profile.deviceMac || null;
+
   const [isScanning, setIsScanning] = useState(false);
   const [devices, setDevices] = useState<DiscoveredDevice[]>([]);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -54,7 +57,7 @@ export default function ConnectionsScreen() {
     setPairing(true);
     setTimeout(() => {
       setPairing(false);
-      setDeviceId(mac);
+      updateProfile({ deviceMac: mac, connectionStatus: 'connected' });
       setDevices([]);
     }, 800);
   };
@@ -68,13 +71,13 @@ export default function ConnectionsScreen() {
         {
           text: 'Forget',
           style: 'destructive',
-          onPress: () => setDeviceId(null),
+          onPress: () => updateProfile({ deviceMac: '', connectionStatus: 'disconnected' }),
         },
       ]
     );
   };
 
-  const isPairedView = deviceId !== null;
+  const isPairedView = deviceId !== null && profile.connectionStatus !== 'disconnected';
 
   return (
     <View style={styles.container}>
@@ -87,7 +90,7 @@ export default function ConnectionsScreen() {
             <TouchableOpacity
               style={[styles.devStateBtn, isPairedView && styles.devStateBtnActive]}
               onPress={() => {
-                setDeviceId('24:6F:28:AB:12:3C');
+                updateProfile({ deviceMac: '24:6F:28:AB:12:3C', connectionStatus: 'connected' });
                 setScanError(null);
                 setDevices([]);
               }}
@@ -99,7 +102,7 @@ export default function ConnectionsScreen() {
             <TouchableOpacity
               style={[styles.devStateBtn, !isPairedView && styles.devStateBtnActive]}
               onPress={() => {
-                setDeviceId(null);
+                updateProfile({ deviceMac: '', connectionStatus: 'disconnected' });
               }}
             >
               <Text style={[styles.devStateText, !isPairedView && styles.devStateTextActive]}>
@@ -160,7 +163,7 @@ export default function ConnectionsScreen() {
 
               <TouchableOpacity
                 style={styles.outlineButton}
-                onPress={() => setDeviceId(null)}
+                onPress={() => updateProfile({ deviceMac: '', connectionStatus: 'disconnected' })}
                 activeOpacity={0.85}
               >
                 <Text style={styles.outlineButtonText}>Pair a different wearable</Text>

@@ -5,8 +5,9 @@ import { Colors } from '../theme/tokens';
 import { useMonitor } from '../state/hooks';
 
 export default function RadarScreen() {
-  const { profile } = useMonitor();
-  const [radarState, setRadarState] = useState<'medium' | 'far' | 'searching'>('medium');
+  const { profile, updateProfile } = useMonitor();
+  const connectionStatus = profile.connectionStatus;
+  const radarState = connectionStatus === 'outOfRange' ? 'far' : connectionStatus === 'searching' || connectionStatus === 'disconnected' ? 'searching' : 'medium';
 
   let isConnected = true;
   let zone: 'Near' | 'Medium' | 'Far' = 'Medium';
@@ -53,14 +54,14 @@ export default function RadarScreen() {
           <Text style={styles.devTitle}>Dev Radar State Switcher:</Text>
           <View style={styles.devStatesRow}>
             {[
-              { key: 'medium', label: 'Medium (4m)' },
-              { key: 'far', label: 'Far (12m)' },
-              { key: 'searching', label: 'Searching' },
+              { key: 'medium', label: 'Medium (4m)', status: 'connected' },
+              { key: 'far', label: 'Far (12m)', status: 'outOfRange' },
+              { key: 'searching', label: 'Searching', status: 'searching' },
             ].map((st) => (
               <TouchableOpacity
                 key={st.key}
                 style={[styles.devStateBtn, radarState === st.key && styles.devStateBtnActive]}
-                onPress={() => setRadarState(st.key as any)}
+                onPress={() => updateProfile({ connectionStatus: st.status as any })}
               >
                 <Text style={[styles.devStateText, radarState === st.key && styles.devStateTextActive]}>
                   {st.label}

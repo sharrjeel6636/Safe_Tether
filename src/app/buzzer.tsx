@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
+import { useMonitor } from '../state/hooks';
 
 export default function BuzzerScreen() {
-  const [isConnected, setIsConnected] = useState(true);
+  const { profile, updateProfile } = useMonitor();
+  const isConnected = profile.connectionStatus === 'connected';
+
   const [selectedDuration, setSelectedDuration] = useState<number>(30); // 10, 30, 60
   const [ringing, setRinging] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(30);
@@ -65,7 +68,7 @@ export default function BuzzerScreen() {
             <TouchableOpacity
               style={[styles.devStateBtn, isConnected && styles.devStateBtnActive]}
               onPress={() => {
-                setIsConnected(true);
+                updateProfile({ connectionStatus: 'connected' });
               }}
             >
               <Text style={[styles.devStateText, isConnected && styles.devStateTextActive]}>
@@ -77,7 +80,7 @@ export default function BuzzerScreen() {
               style={[styles.devStateBtn, !isConnected && styles.devStateBtnActiveDanger]}
               onPress={() => {
                 if (ringing) handleStopRing();
-                setIsConnected(false);
+                updateProfile({ connectionStatus: 'disconnected' });
               }}
             >
               <Text style={[styles.devStateText, !isConnected && styles.devStateTextActive]}>

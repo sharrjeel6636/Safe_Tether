@@ -15,9 +15,10 @@ import { Colors } from '../theme/tokens';
 import { useMonitor } from '../state/hooks';
 
 export default function PanicScreen() {
-  const { profile } = useMonitor();
-  // Dev interactive states for testing both connected and disconnected states
-  const [isConnected, setIsConnected] = useState(true);
+  const { profile, updateProfile } = useMonitor();
+  const isConnected = profile.connectionStatus === 'connected';
+
+  // Dev interactive states for testing locating states and errors
   const [isLocating, setIsLocating] = useState(false);
   const [hasError, setHasError] = useState(false);
 
@@ -79,7 +80,7 @@ export default function PanicScreen() {
           <View style={styles.devStatesRow}>
             <TouchableOpacity
               style={[styles.devStateBtn, isConnected && styles.devStateBtnActive]}
-              onPress={() => setIsConnected(!isConnected)}
+              onPress={() => updateProfile({ connectionStatus: isConnected ? 'disconnected' : 'connected' })}
             >
               <Text style={[styles.devStateText, isConnected && styles.devStateTextActive]}>
                 {isConnected ? 'Connected' : 'Disconnected'}
