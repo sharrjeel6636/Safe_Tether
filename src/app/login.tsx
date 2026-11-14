@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/tokens';
 import { useSession } from '../state/hooks';
 import { DebugRouteList } from '../components/DebugRouteList';
+import { signInWithEmail, signUpWithEmail, isFirebaseConfigured } from '../data/auth';
+import { getAuthErrorMessage } from '../data/authMessages';
 
 export default function LoginScreen() {
   const { login, loginWithoutAccount } = useSession();
@@ -24,10 +26,10 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [firebaseReady, setFirebaseReady] = useState(false);
+  const [firebaseReady, setFirebaseReady] = useState(() => isFirebaseConfigured());
   const [showDebug, setShowDebug] = useState(false);
 
-  const validateAndSubmit = () => {
+  const validateAndSubmit = async () => {
     let isValid = true;
     setEmailError('');
     setPasswordError('');
@@ -45,11 +47,21 @@ export default function LoginScreen() {
 
     if (isValid) {
       setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        login(email);
+      try {
+        await signInWithEmail(email.trim(), password);
+        login(email.trim());
         router.replace('/(tabs)');
-      }, 800);
+      } catch (error: any) {
+        try {
+          await signUpWithEmail(email.trim(), password);
+          login(email.trim());
+          router.replace('/(tabs)');
+        } catch (signupError: any) {
+          Alert.alert('Authentication Error', getAuthErrorMessage(signupError.code || error.code));
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

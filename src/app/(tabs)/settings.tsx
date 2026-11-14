@@ -13,6 +13,8 @@ import {
 import { router } from 'expo-router';
 import { Colors } from '../../theme/tokens';
 import { useSettings, useSession } from '../../state/hooks';
+import { deleteAccountWithPassword } from '../../data/auth';
+import { getAuthErrorMessage } from '../../data/authMessages';
 
 function CustomSwitch({ value, onValueChange }: { value: boolean; onValueChange: (val: boolean) => void }) {
   return (
@@ -74,20 +76,21 @@ export default function SettingsTabScreen() {
     );
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (!password) return;
-    if (password.length < 4) {
-      setDeleteError('Incorrect password. Please try again.');
-      return;
-    }
     setDeleteError('');
     setIsDeleting(true);
-    setTimeout(() => {
+    try {
+      await deleteAccountWithPassword(password);
       setIsDeleting(false);
       setDeleteModalVisible(false);
       setPassword('');
+      logout();
       router.replace('/login');
-    }, 1200);
+    } catch (error: any) {
+      setIsDeleting(false);
+      setDeleteError(getAuthErrorMessage(error.code) || 'Incorrect password or error deleting account.');
+    }
   };
 
   return (

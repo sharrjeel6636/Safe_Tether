@@ -34,7 +34,9 @@
     "plugins": [
       "expo-router",
       "react-native-ble-plx",
-      "expo-sqlite"
+      "expo-sqlite",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ]
   }
 }
