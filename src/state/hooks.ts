@@ -128,6 +128,7 @@ export function useSession() {
 
   const logout = () => {
     setIsAuthenticated(false);
+    setLocalOnlyMode(false);
   };
 
   const loginWithoutAccount = () => {
@@ -137,7 +138,9 @@ export function useSession() {
 
   return {
     isAuthenticated,
+    localOnly: localOnlyMode,
     localOnlyMode,
+    setLocalOnly: setLocalOnlyMode,
     login,
     logout,
     loginWithoutAccount,

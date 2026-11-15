@@ -16,8 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../theme/tokens';
 import { useSession } from '../state/hooks';
 import { DebugRouteList } from '../components/DebugRouteList';
-import { signInWithEmail, signUpWithEmail, isFirebaseConfigured } from '../data/auth';
-import { getAuthErrorMessage } from '../data/authMessages';
+import { signInWithEmail, signUpWithEmail, isFirebaseConfigured, getAuthErrorMessage } from '../data/auth';
 
 export default function LoginScreen() {
   const { login, loginWithoutAccount } = useSession();
@@ -29,7 +28,7 @@ export default function LoginScreen() {
   const [firebaseReady, setFirebaseReady] = useState(() => isFirebaseConfigured());
   const [showDebug, setShowDebug] = useState(false);
 
-  const validateAndSubmit = async () => {
+  const validateInputs = () => {
     let isValid = true;
     setEmailError('');
     setPasswordError('');
@@ -45,23 +44,34 @@ export default function LoginScreen() {
       isValid = false;
     }
 
-    if (isValid) {
-      setLoading(true);
-      try {
-        await signInWithEmail(email.trim(), password);
-        login(email.trim());
-        router.replace('/(tabs)');
-      } catch (error: any) {
-        try {
-          await signUpWithEmail(email.trim(), password);
-          login(email.trim());
-          router.replace('/(tabs)');
-        } catch (signupError: any) {
-          Alert.alert('Authentication Error', getAuthErrorMessage(signupError.code || error.code));
-        }
-      } finally {
-        setLoading(false);
-      }
+    return isValid;
+  };
+
+  const handleLogin = async () => {
+    if (!validateInputs()) return;
+    setLoading(true);
+    try {
+      await signInWithEmail(email.trim(), password);
+      login(email.trim());
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Authentication Error', getAuthErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    if (!validateInputs()) return;
+    setLoading(true);
+    try {
+      await signUpWithEmail(email.trim(), password);
+      login(email.trim());
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Authentication Error', getAuthErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,7 +169,7 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={validateAndSubmit}
+                onPress={handleLogin}
                 activeOpacity={0.85}
                 disabled={loading}
               >
@@ -172,7 +182,7 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 style={styles.outlineButton}
-                onPress={validateAndSubmit}
+                onPress={handleSignUp}
                 activeOpacity={0.85}
                 disabled={loading}
               >

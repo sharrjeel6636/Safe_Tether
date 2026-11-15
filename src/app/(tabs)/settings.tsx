@@ -13,8 +13,7 @@ import {
 import { router } from 'expo-router';
 import { Colors } from '../../theme/tokens';
 import { useSettings, useSession } from '../../state/hooks';
-import { deleteAccountWithPassword } from '../../data/auth';
-import { getAuthErrorMessage } from '../../data/authMessages';
+import { deleteAccountWithPassword, getAuthErrorMessage } from '../../data/auth';
 
 function CustomSwitch({ value, onValueChange }: { value: boolean; onValueChange: (val: boolean) => void }) {
   return (

@@ -22,27 +22,29 @@ function logAuthError(where: string, e: any) {
 }
 
 export function getAuthErrorMessage(e: any): string {
-  switch (e?.code) {
-    case 'auth/invalid-email':
+  const code = e?.code || (typeof e === 'string' ? e : '');
+  const cleanCode = typeof code === 'string' ? code.replace(/^auth\//, '') : '';
+  switch (cleanCode) {
+    case 'invalid-email':
       return 'Email address is not valid.';
-    case 'auth/user-not-found':
-    case 'auth/wrong-password':
-    case 'auth/invalid-credential':
+    case 'user-not-found':
+    case 'wrong-password':
+    case 'invalid-credential':
       return 'Email or password is incorrect.';
-    case 'auth/email-already-in-use':
+    case 'email-already-in-use':
       return 'An account with this email already exists.';
-    case 'auth/weak-password':
+    case 'weak-password':
       return 'Password is too weak (use at least 6 characters).';
-    case 'auth/network-request-failed':
+    case 'network-request-failed':
       return 'No internet connection.';
-    case 'auth/too-many-requests':
+    case 'too-many-requests':
       return 'Too many attempts. Try again later.';
-    case 'auth/operation-not-allowed':
+    case 'operation-not-allowed':
       return 'Email/Password sign-in is not enabled in Firebase.';
-    case 'auth/internal-error':
+    case 'internal-error':
       return 'Firebase internal error. Check SHA-1/SHA-256 and google-services.json.';
     default:
-      return `Authentication error: ${e?.code ?? e?.message ?? 'unknown'}`;
+      return `Authentication error: ${e?.code || code || 'unknown'}`;
   }
 }
 

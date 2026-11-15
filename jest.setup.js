@@ -62,3 +62,25 @@ jest.mock('@notifee/react-native', () => ({
     HIGH: 4,
   },
 }));
+
+jest.mock('@react-native-firebase/app', () => ({
+  default: {
+    app: jest.fn(() => ({})),
+  },
+}));
+
+jest.mock('@react-native-firebase/auth', () => ({
+  getAuth: jest.fn(() => ({})),
+  signInWithEmailAndPassword: jest.fn(),
+  createUserWithEmailAndPassword: jest.fn(),
+  signOut: jest.fn(),
+  EmailAuthProvider: {
+    credential: jest.fn(),
+  },
+  reauthenticateWithCredential: jest.fn(),
+  deleteUser: jest.fn(),
+}));
+
+jest.mock('@react-native-firebase/firestore', () => ({
+  default: jest.fn(() => ({})),
+}));
