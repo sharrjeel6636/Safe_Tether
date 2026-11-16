@@ -11,7 +11,8 @@ import {
 import { router } from 'expo-router';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
-import { useMonitor } from '../state/hooks';
+import { useMonitor, useSettings } from '../state/hooks';
+import { ble, runtime } from '../runtime';
 
 interface DiscoveredDevice {
   name: string;
@@ -21,6 +22,7 @@ interface DiscoveredDevice {
 
 export default function ConnectionsScreen() {
   const { profile, updateProfile } = useMonitor();
+  const { update } = useSettings();
   const deviceId = profile.deviceMac || null;
 
   const [isScanning, setIsScanning] = useState(false);
@@ -32,34 +34,44 @@ export default function ConnectionsScreen() {
   const [devNoDevice, setDevNoDevice] = useState(false);
   const [devErrorMode, setDevErrorMode] = useState<string | null>(null);
 
-  const handleStartScan = () => {
+  const handleStartScan = async () => {
     setIsScanning(true);
     setDevices([]);
     setScanError(null);
 
-    setTimeout(() => {
-      setIsScanning(false);
+    try {
       if (devErrorMode) {
         setScanError(devErrorMode);
         return;
       }
       if (devNoDevice) {
         setDevices([]);
-      } else {
-        setDevices([
-          { name: 'ST-1A2B', mac: '24:6F:28:AB:12:3C', rssi: '-62 dBm' },
-        ]);
+        return;
       }
-    }, 2000);
+      const rawDevices = await ble.scan();
+      const filtered = rawDevices.filter(
+        (d) => d.name.startsWith('ST-') || d.uuid === '0000180d-0000-1000-8000-00805f9b34fb'
+      );
+      setDevices(filtered.map((d) => ({ name: d.name, mac: d.id, rssi: `${d.rssi ?? -60} dBm` })));
+    } catch (e: any) {
+      setScanError(e?.message || 'Please switch Bluetooth on.');
+    } finally {
+      setIsScanning(false);
+    }
   };
 
-  const handlePairDevice = (mac: string) => {
+  const handlePairDevice = async (mac: string) => {
     setPairing(true);
-    setTimeout(() => {
-      setPairing(false);
+    try {
+      await ble.pair(mac);
+      update({ deviceId: mac });
       updateProfile({ deviceMac: mac, connectionStatus: 'connected' });
       setDevices([]);
-    }, 800);
+    } catch (e: any) {
+      Alert.alert('Pairing Error', e?.message || 'Could not pair device.');
+    } finally {
+      setPairing(false);
+    }
   };
 
   const handleForget = () => {
@@ -71,7 +83,12 @@ export default function ConnectionsScreen() {
         {
           text: 'Forget',
           style: 'destructive',
-          onPress: () => updateProfile({ deviceMac: '', connectionStatus: 'disconnected' }),
+          onPress: async () => {
+            await ble.forget();
+            await runtime.stop();
+            update({ deviceId: null });
+            updateProfile({ deviceMac: '', connectionStatus: 'disconnected' });
+          },
         },
       ]
     );

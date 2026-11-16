@@ -11,66 +11,45 @@ import {
 import { router } from 'expo-router';
 import { Colors } from '../../theme/tokens';
 import { Ionicons } from '@expo/vector-icons';
-import { useMonitor, usePermissions } from '../../state/hooks';
+import { useSettings, useMonitor, usePermissions, useNow } from '../../state/hooks';
+import { startMonitoringFlow } from '../../actions';
+import { runtime } from '../../runtime';
+import { LINK_LABELS, isLinked, isLowBattery } from '../../domain/types';
 
 export default function HomeScreen() {
-  const { profile, updateProfile, isMonitoring, toggleMonitoring } = useMonitor();
-  const { bluetoothGranted, notificationsGranted } = usePermissions();
+  const { childName } = useSettings();
+  const { snapshot, isLinked: linked, isLowBattery: lowBattery } = useMonitor();
+  const { missing, fixNext } = usePermissions();
 
   const [loadingMonitor, setLoadingMonitor] = useState(false);
+  const [isMonitoring, setIsMonitoring] = useState(true);
   const [showDevMenu, setShowDevMenu] = useState(false);
 
-  // States for dev switcher representation: A (unpaired), B (connected near), C (out of range + low battery), D (monitoring on + bt off + notification missing)
-  const connectionStatus = profile.connectionStatus;
-  const currentState = connectionStatus === 'disconnected' ? 'A' : connectionStatus === 'connected' ? 'B' : connectionStatus === 'outOfRange' ? 'C' : 'B';
+  const lastSignalText = useNow();
 
-  const isPaired = connectionStatus !== 'disconnected';
-  const childName = profile.name || 'Your child';
+  const linkStatus = LINK_LABELS[snapshot.link] || 'Connected';
+  const statusColor = linked ? Colors.success : Colors.coral;
+  const statusBg = linked ? '#D1FAE5' : Colors.coralLight;
+  const distance = `${snapshot.distanceM} m`;
+  const zone = snapshot.zone;
+  const battery = snapshot.batteryPct;
+  const notificationsMissing = missing.length > 0;
+  const bluetoothOff = !snapshot.bluetoothOn;
+  const backgroundProtectionOff = false;
 
-  let linkStatus = 'Connected';
-  let statusColor = Colors.success;
-  let statusBg = '#D1FAE5';
-  let distance = '4 m';
-  let zone = 'Near zone';
-  let battery = profile.batteryLevel ?? 82;
-  let notificationsMissing = !notificationsGranted;
-  let bluetoothOff = !bluetoothGranted;
-  let batteryLow = battery < 20;
-  let backgroundProtectionOff = false;
-
-  if (connectionStatus === 'disconnected') {
-    linkStatus = 'Disconnected';
-    statusColor = Colors.coral;
-    statusBg = Colors.coralLight;
-    distance = '–';
-    zone = 'Not connected';
-  } else if (connectionStatus === 'connected') {
-    linkStatus = 'Connected';
-    statusColor = Colors.success;
-    statusBg = '#D1FAE5';
-    distance = '4 m';
-    zone = 'Near zone';
-  } else if (connectionStatus === 'outOfRange') {
-    linkStatus = 'Out of range';
-    statusColor = Colors.coral;
-    statusBg = Colors.coralLight;
-    distance = '12 m';
-    zone = 'Far zone';
-    batteryLow = true;
-  } else if (connectionStatus === 'searching') {
-    linkStatus = 'Searching';
-    statusColor = Colors.warning;
-    statusBg = '#FEF3C7';
-    distance = '–';
-    zone = 'Not connected';
-  }
-
-  const handleToggleMonitoring = () => {
+  const handleToggleMonitoring = async () => {
     setLoadingMonitor(true);
-    setTimeout(() => {
+    try {
+      if (isMonitoring) {
+        await runtime.stop();
+        setIsMonitoring(false);
+      } else {
+        await startMonitoringFlow();
+        setIsMonitoring(true);
+      }
+    } finally {
       setLoadingMonitor(false);
-      toggleMonitoring();
-    }, 600);
+    }
   };
 
   return (
@@ -84,32 +63,19 @@ export default function HomeScreen() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="bug-outline" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
-            <Text style={styles.devTitle}>Dev State Switcher: [{currentState}]</Text>
+            <Text style={styles.devTitle}>Dev State Switcher</Text>
           </View>
           <Ionicons name={showDevMenu ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
         </TouchableOpacity>
 
         {showDevMenu && (
           <View style={styles.devStatesRow}>
-            {(['A', 'B', 'C', 'D'] as const).map((st) => (
-              <TouchableOpacity
-                key={st}
-                style={[styles.devStateBtn, currentState === st && styles.devStateBtnActive]}
-                onPress={() => {
-                  if (st === 'A') updateProfile({ connectionStatus: 'disconnected' });
-                  else if (st === 'B') updateProfile({ connectionStatus: 'connected', batteryLevel: 82 });
-                  else if (st === 'C') updateProfile({ connectionStatus: 'outOfRange', batteryLevel: 18 });
-                  else if (st === 'D') {
-                    updateProfile({ connectionStatus: 'searching', batteryLevel: 65 });
-                    if (!isMonitoring) toggleMonitoring();
-                  }
-                }}
-              >
-                <Text style={[styles.devStateText, currentState === st && styles.devStateTextActive]}>
-                  State {st}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            <TouchableOpacity
+              style={styles.devStateBtn}
+              onPress={() => Alert.alert('Dev State', 'Switched state')}
+            >
+              <Text style={styles.devStateText}>Reset</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -123,7 +89,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Banners (each only when condition is true) */}
+      {/* Banners */}
       {notificationsMissing && (
         <View style={[styles.banner, styles.bannerAlert]}>
           <Ionicons name="notifications-off-outline" size={20} color={Colors.coral} style={styles.bannerIcon} />
@@ -132,7 +98,7 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity
             style={styles.bannerActionBtn}
-            onPress={() => Alert.alert('Permission', 'Notifications permission granted.')}
+            onPress={fixNext}
           >
             <Text style={styles.bannerActionText}>Fix</Text>
           </TouchableOpacity>
@@ -154,7 +120,7 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {batteryLow && (
+      {lowBattery && (
         <View style={[styles.banner, styles.bannerWarn]}>
           <Ionicons name="battery-dead-outline" size={20} color={Colors.warning} style={styles.bannerIcon} />
           <View style={styles.bannerContent}>
@@ -185,7 +151,7 @@ export default function HomeScreen() {
       )}
 
       {/* Main Wearable Card */}
-      {!isPaired ? (
+      {!linked ? (
         <View style={styles.card}>
           <Text style={styles.cardHeading}>Pair your wearable</Text>
           <Text style={styles.cardBody}>
@@ -205,7 +171,7 @@ export default function HomeScreen() {
           <Text style={styles.bigDistance}>{distance}</Text>
           <Text style={styles.zoneHeading}>{zone}</Text>
           <Text style={styles.smallInk}>Battery {battery} %</Text>
-          <Text style={styles.smallMutedInfo}>Safe range 10 m · last signal 3 s ago</Text>
+          <Text style={styles.smallMutedInfo}>Safe range 10 m · last signal {lastSignalText}</Text>
 
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
@@ -298,17 +264,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  devStateBtnActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
   devStateText: {
     fontSize: 12,
     fontWeight: '600',
     color: Colors.textDark,
-  },
-  devStateTextActive: {
-    color: '#FFFFFF',
   },
   headerRow: {
     flexDirection: 'row',

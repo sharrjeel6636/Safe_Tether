@@ -3,10 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
 import { useMonitor } from '../state/hooks';
+import { runtime } from '../runtime';
 
 export default function BuzzerScreen() {
-  const { profile, updateProfile } = useMonitor();
-  const isConnected = profile.connectionStatus === 'connected';
+  const { isLinked, updateSnapshot } = useMonitor();
+  const isConnected = isLinked;
 
   const [selectedDuration, setSelectedDuration] = useState<number>(30); // 10, 30, 60
   const [ringing, setRinging] = useState(false);
@@ -20,9 +21,13 @@ export default function BuzzerScreen() {
         setSecondsLeft((prev) => {
           if (prev <= 1) {
             setRinging(false);
+            runtime.stopBuzz();
+            updateSnapshot({ buzzSecondsLeft: 0 });
             return selectedDuration;
           }
-          return prev - 1;
+          const next = prev - 1;
+          updateSnapshot({ buzzSecondsLeft: next });
+          return next;
         });
       }, 1000);
     }
@@ -35,11 +40,15 @@ export default function BuzzerScreen() {
     if (!isConnected) return;
     setSecondsLeft(selectedDuration);
     setRinging(true);
+    runtime.buzz(selectedDuration);
+    updateSnapshot({ buzzSecondsLeft: selectedDuration });
   };
 
   const handleStopRing = () => {
     setRinging(false);
     setSecondsLeft(selectedDuration);
+    runtime.stopBuzz();
+    updateSnapshot({ buzzSecondsLeft: 0 });
   };
 
   const handleSelectDuration = (dur: number) => {
@@ -68,7 +77,7 @@ export default function BuzzerScreen() {
             <TouchableOpacity
               style={[styles.devStateBtn, isConnected && styles.devStateBtnActive]}
               onPress={() => {
-                updateProfile({ connectionStatus: 'connected' });
+                updateSnapshot({ link: 'connected' });
               }}
             >
               <Text style={[styles.devStateText, isConnected && styles.devStateTextActive]}>
@@ -80,7 +89,7 @@ export default function BuzzerScreen() {
               style={[styles.devStateBtn, !isConnected && styles.devStateBtnActiveDanger]}
               onPress={() => {
                 if (ringing) handleStopRing();
-                updateProfile({ connectionStatus: 'disconnected' });
+                updateSnapshot({ link: 'disconnected' });
               }}
             >
               <Text style={[styles.devStateText, !isConnected && styles.devStateTextActive]}>

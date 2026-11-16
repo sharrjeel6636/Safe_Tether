@@ -58,6 +58,13 @@ export async function getAlerts(): Promise<SafetyAlert[]> {
   }));
 }
 
+export async function clearAlerts(): Promise<void> {
+  if (!db) {
+    db = await SQLite.openDatabaseAsync('safetether.db');
+  }
+  await db.execAsync('DELETE FROM alerts;');
+}
+
 export async function saveProfileStorage(profile: ChildProfile): Promise<void> {
   await AsyncStorage.setItem('@safetether_profile', JSON.stringify(profile));
 }
