@@ -13,16 +13,6 @@
     "android": {
       "package": "com.sharjeel.safetether",
       "googleServicesFile": "./google-services.json",
-      "permissions": [
-        "BLUETOOTH_SCAN",
-        "BLUETOOTH_CONNECT",
-        "ACCESS_FINE_LOCATION",
-        "POST_NOTIFICATIONS",
-        "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_CONNECTED_DEVICE",
-        "android.permission.BLUETOOTH",
-        "android.permission.BLUETOOTH_ADMIN"
-      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -36,7 +26,6 @@
     },
     "plugins": [
       "expo-router",
-      "react-native-ble-plx",
       "expo-sqlite",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
@@ -46,11 +35,21 @@
         {
           "android": {
             "kotlinVersion": "2.4.0",
-            "kspVersion": "2.3.14"
+            "kspVersion": "2.3.14",
+            "minSdkVersion": 24
           }
         }
       ],
-      "@react-native-firebase/messaging"
+      "@react-native-firebase/messaging",
+      "expo-location",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "neverForLocation": true
+        }
+      ],
+      "./plugins/withMonitorService"
     ],
     "extra": {
       "router": {
