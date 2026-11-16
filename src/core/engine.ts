@@ -29,7 +29,7 @@ export class SafetyEngine {
 
   public async triggerAlert(type: SafetyAlert['type'], title: string, message: string): Promise<SafetyAlert> {
     const alert: SafetyAlert = {
-      id: `alert-${Date.now()}`,
+      id: `alert-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       type,
       title,
       message,
