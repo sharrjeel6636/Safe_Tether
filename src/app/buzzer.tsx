@@ -70,35 +70,6 @@ export default function BuzzerScreen() {
     <View style={styles.container}>
       <AppBar kind="stack" title="Find child" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Dev Connection State Switcher */}
-        <View style={styles.devMenuCard}>
-          <Text style={styles.devTitle}>Dev Connection State Switcher:</Text>
-          <View style={styles.devStatesRow}>
-            <TouchableOpacity
-              style={[styles.devStateBtn, isConnected && styles.devStateBtnActive]}
-              onPress={() => {
-                updateSnapshot({ link: 'connected' });
-              }}
-            >
-              <Text style={[styles.devStateText, isConnected && styles.devStateTextActive]}>
-                Connected (Reachable)
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.devStateBtn, !isConnected && styles.devStateBtnActiveDanger]}
-              onPress={() => {
-                if (ringing) handleStopRing();
-                updateSnapshot({ link: 'disconnected' });
-              }}
-            >
-              <Text style={[styles.devStateText, !isConnected && styles.devStateTextActive]}>
-                Disconnected (Unreachable)
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Main Card */}
         <View style={styles.card}>
           <Text style={styles.bellEmoji}>{ringing ? '🔔' : '🔕'}</Text>

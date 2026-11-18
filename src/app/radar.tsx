@@ -49,28 +49,6 @@ export default function RadarScreen() {
     <View style={styles.container}>
       <AppBar kind="stack" title="Where is my child" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Dev State Switcher */}
-        <View style={styles.devMenuCard}>
-          <Text style={styles.devTitle}>Dev Radar State Switcher:</Text>
-          <View style={styles.devStatesRow}>
-            {[
-              { key: 'medium', label: 'Medium (4m)', status: 'connected' },
-              { key: 'far', label: 'Far (12m)', status: 'outOfRange' },
-              { key: 'searching', label: 'Searching', status: 'searching' },
-            ].map((st) => (
-              <TouchableOpacity
-                key={st.key}
-                style={[styles.devStateBtn, radarState === st.key && styles.devStateBtnActive]}
-                onPress={() => updateProfile({ connectionStatus: st.status as any })}
-              >
-                <Text style={[styles.devStateText, radarState === st.key && styles.devStateTextActive]}>
-                  {st.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
         <View style={styles.centerWrapper}>
           {/* StatusChip */}
           <View style={[styles.statusChip, { backgroundColor: chipBg }]}>

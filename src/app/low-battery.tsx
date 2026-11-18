@@ -7,9 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMonitor } from '../state/hooks';
 
 export default function LowBatteryScreen() {
-  const { profile, updateProfile } = useMonitor();
-  const batteryPct = profile.batteryLevel ?? 18;
-  const isCharging = false;
+  const { snapshot } = useMonitor();
+  const batteryPct = snapshot.batteryPct;
+  const isCharging = snapshot.charging;
 
   const isLow = batteryPct <= 20 && !isCharging;
   const warnColor = isLow ? Colors.coral : Colors.warning;
@@ -36,28 +36,6 @@ export default function LowBatteryScreen() {
     <View style={styles.container}>
       <AppBar kind="stack" title="Wearable battery" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Dev State Switcher */}
-        <View style={styles.devMenuCard}>
-          <Text style={styles.devTitle}>Dev Battery State Switcher:</Text>
-          <View style={styles.devStatesRow}>
-            {[
-              { key: 'low', label: 'Low (18%)', val: 18 },
-              { key: 'charging', label: 'Charging (45%)', val: 45 },
-              { key: 'fine', label: 'Fine (82%)', val: 82 },
-            ].map((st) => (
-              <TouchableOpacity
-                key={st.key}
-                style={[styles.devStateBtn, batteryPct === st.val && styles.devStateBtnActive]}
-                onPress={() => updateProfile({ batteryLevel: st.val })}
-              >
-                <Text style={[styles.devStateText, batteryPct === st.val && styles.devStateTextActive]}>
-                  {st.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
         <View style={styles.contentCard}>
           {/* Battery Icon (64 x 104) */}
           <View style={styles.batteryIconWrapper}>
@@ -125,46 +103,6 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: 40,
   },
-  devMenuCard: {
-    backgroundColor: Colors.cardBg,
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  devTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.primary,
-    marginBottom: 8,
-  },
-  devStatesRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  devStateBtn: {
-    flex: 1,
-    minHeight: 44,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: Colors.sand,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  devStateBtnActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  devStateText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textDark,
-  },
-  devStateTextActive: {
-    color: '#FFFFFF',
-  },
   contentCard: {
     backgroundColor: Colors.cardBg,
     borderRadius: 20,
@@ -201,7 +139,7 @@ const styles = StyleSheet.create({
   },
   batteryLevelBar: {
     width: '100%',
-    borderRadius: 3,
+    borderRadius: 4,
   },
   chargingContainer: {
     flex: 1,
@@ -209,7 +147,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   batteryTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.textDark,
   },
@@ -219,7 +157,6 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: 22,
-    paddingHorizontal: 8,
   },
   tipsCard: {
     backgroundColor: Colors.cardBg,
@@ -239,19 +176,16 @@ const styles = StyleSheet.create({
   },
   tipRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    gap: 8,
   },
   bullet: {
-    fontSize: 15,
+    fontSize: 14,
+    color: Colors.primary,
     fontWeight: '700',
-    color: Colors.textMuted,
-    marginRight: 8,
-    lineHeight: 20,
   },
   tipText: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '500',
     color: Colors.textMuted,
     lineHeight: 20,
   },

@@ -3,13 +3,14 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { router } from 'expo-router';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
-import { useMonitor } from '../state/hooks';
+import { useMonitor, useSettings } from '../state/hooks';
 
 export default function OutOfRangeScreen() {
-  const { profile, updateProfile } = useMonitor();
-  const connectionStatus = profile.connectionStatus;
+  const { snapshot } = useMonitor();
+  const { childName } = useSettings();
+  const connectionStatus = snapshot.link;
   const variant = connectionStatus === 'connected' ? 'connected' : connectionStatus === 'searching' ? 'lostContact' : 'outOfRange';
-  const name = profile.name || 'Leo';
+  const name = childName;
 
   let headline = `${name} is outside the safe range`;
   let chipLabel = 'Out of range';
@@ -35,30 +36,6 @@ export default function OutOfRangeScreen() {
     <View style={styles.container}>
       <AppBar kind="stack" title="Out of range" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Dev Variant Switcher */}
-        <View style={styles.devMenuCard}>
-          <Text style={styles.devTitle}>Dev Variant Switcher:</Text>
-          <View style={styles.devStatesRow}>
-            {(
-              [
-                { key: 'outOfRange', label: 'Out of Range', status: 'outOfRange' },
-                { key: 'connected', label: 'Connected', status: 'connected' },
-                { key: 'lostContact', label: 'Lost Contact', status: 'searching' },
-              ] as const
-            ).map((v) => (
-              <TouchableOpacity
-                key={v.key}
-                style={[styles.devStateBtn, variant === v.key && styles.devStateBtnActive]}
-                onPress={() => updateProfile({ connectionStatus: v.status as any })}
-              >
-                <Text style={[styles.devStateText, variant === v.key && styles.devStateTextActive]}>
-                  {v.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
         {/* Main Card */}
         <View style={styles.card}>
           <View style={styles.cardTopRow}>

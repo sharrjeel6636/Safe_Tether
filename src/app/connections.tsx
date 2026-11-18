@@ -30,24 +30,12 @@ export default function ConnectionsScreen() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [pairing, setPairing] = useState(false);
 
-  // Dev toggles
-  const [devNoDevice, setDevNoDevice] = useState(false);
-  const [devErrorMode, setDevErrorMode] = useState<string | null>(null);
-
   const handleStartScan = async () => {
     setIsScanning(true);
     setDevices([]);
     setScanError(null);
 
     try {
-      if (devErrorMode) {
-        setScanError(devErrorMode);
-        return;
-      }
-      if (devNoDevice) {
-        setDevices([]);
-        return;
-      }
       const rawDevices = await ble.scan();
       const filtered = rawDevices.filter(
         (d) => d.name.startsWith('ST-') || d.uuid === '0000180d-0000-1000-8000-00805f9b34fb'
@@ -100,53 +88,6 @@ export default function ConnectionsScreen() {
     <View style={styles.container}>
       <AppBar kind="stack" title="Wearable connection" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Dev Menu Card */}
-        <View style={styles.devMenuCard}>
-          <Text style={styles.devTitle}>Dev Connection State Switcher:</Text>
-          <View style={styles.devStatesRow}>
-            <TouchableOpacity
-              style={[styles.devStateBtn, isPairedView && styles.devStateBtnActive]}
-              onPress={() => {
-                updateProfile({ deviceMac: '24:6F:28:AB:12:3C', connectionStatus: 'connected' });
-                setScanError(null);
-                setDevices([]);
-              }}
-            >
-              <Text style={[styles.devStateText, isPairedView && styles.devStateTextActive]}>
-                Paired View
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.devStateBtn, !isPairedView && styles.devStateBtnActive]}
-              onPress={() => {
-                updateProfile({ deviceMac: '', connectionStatus: 'disconnected' });
-              }}
-            >
-              <Text style={[styles.devStateText, !isPairedView && styles.devStateTextActive]}>
-                Scan View
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={[styles.devStatesRow, { marginTop: 6 }]}>
-            <TouchableOpacity
-              style={[styles.devStateBtn, devNoDevice && styles.devStateBtnActiveDanger]}
-              onPress={() => setDevNoDevice(!devNoDevice)}
-            >
-              <Text style={[styles.devStateText, devNoDevice && styles.devStateTextActive]}>
-                {devNoDevice ? 'No Device: ON' : 'No Device: OFF'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.devStateBtn, devErrorMode === 'Please switch Bluetooth on.' && styles.devStateBtnActiveDanger]}
-              onPress={() => setDevErrorMode(devErrorMode ? null : 'Please switch Bluetooth on.')}
-            >
-              <Text style={[styles.devStateText, devErrorMode === 'Please switch Bluetooth on.' && styles.devStateTextActive]}>
-                BT Off Error
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {isPairedView ? (
           <>
             {/* Paired Card */}

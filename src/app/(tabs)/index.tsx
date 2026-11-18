@@ -54,32 +54,6 @@ export default function HomeScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Dev Menu Toggle & State Switcher */}
-      <View style={styles.devMenuCard}>
-        <TouchableOpacity
-          style={styles.devHeaderRow}
-          onPress={() => setShowDevMenu(!showDevMenu)}
-          activeOpacity={0.8}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="bug-outline" size={16} color={Colors.primary} style={{ marginRight: 6 }} />
-            <Text style={styles.devTitle}>Dev State Switcher</Text>
-          </View>
-          <Ionicons name={showDevMenu ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
-        </TouchableOpacity>
-
-        {showDevMenu && (
-          <View style={styles.devStatesRow}>
-            <TouchableOpacity
-              style={styles.devStateBtn}
-              onPress={() => Alert.alert('Dev State', 'Switched state')}
-            >
-              <Text style={styles.devStateText}>Reset</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
       {/* Top: Child Name & StatusChip */}
       <View style={styles.headerRow}>
         <Text style={styles.childName}>{childName}</Text>

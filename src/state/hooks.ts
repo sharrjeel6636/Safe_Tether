@@ -115,7 +115,7 @@ export function useMonitor() {
     deviceMac: globalSettings.deviceId,
     connectionStatus: snapshot.link,
     batteryLevel: snapshot.batteryPct,
-    lastKnownLocation: { latitude: 37.7749, longitude: -122.4194 },
+    lastKnownLocation: { latitude: 0, longitude: 0 },
   };
 
   return {
@@ -163,7 +163,10 @@ export function useAlerts() {
   };
 
   useEffect(() => {
-    refresh();
+    getAlerts().then((fetched) => {
+      globalAlerts = fetched;
+      setRows(fetched);
+    });
   }, []);
 
   const clearHistory = async () => {
@@ -255,7 +258,7 @@ export function useSession() {
 }
 
 export function useNow(): string {
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -273,8 +276,8 @@ export function useLatestAlert(type?: string): SafetyAlert | null {
 
 export function useLocationAlert(alertId?: string): { latitude: number; longitude: number; address: string } {
   return {
-    latitude: 37.7749,
-    longitude: -122.4194,
-    address: '123 SafeTether Way, San Francisco, CA',
+    latitude: 0,
+    longitude: 0,
+    address: '',
   };
 }

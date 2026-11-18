@@ -96,37 +96,39 @@ export default function SettingsTabScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Dev State Switcher for testing all states easily */}
-        <View style={styles.devMenuCard}>
-          <Text style={styles.devTitle}>Dev State Switcher:</Text>
-          <View style={styles.devStatesRow}>
-            <TouchableOpacity
-              style={[styles.devStateBtn, isLocalOnly && styles.devStateBtnActive]}
-              onPress={handleToggleLocalOnly}
-            >
-              <Text style={[styles.devStateText, isLocalOnly && styles.devStateTextActive]}>
-                {isLocalOnly ? 'Local-Only Mode' : 'Account Mode'}
-              </Text>
-            </TouchableOpacity>
+        {__DEV__ && (
+          <View style={styles.devMenuCard}>
+            <Text style={styles.devTitle}>Dev State Switcher:</Text>
+            <View style={styles.devStatesRow}>
+              <TouchableOpacity
+                style={[styles.devStateBtn, isLocalOnly && styles.devStateBtnActive]}
+                onPress={handleToggleLocalOnly}
+              >
+                <Text style={[styles.devStateText, isLocalOnly && styles.devStateTextActive]}>
+                  {isLocalOnly ? 'Local-Only Mode' : 'Account Mode'}
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.devStateBtn, !notificationsAllowed && styles.devStateBtnActive]}
-              onPress={() => setNotificationsAllowed(!notificationsAllowed)}
-            >
-              <Text style={[styles.devStateText, !notificationsAllowed && styles.devStateTextActive]}>
-                {notificationsAllowed ? 'Notifs Allowed' : 'Notifs Blocked'}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.devStateBtn, !notificationsAllowed && styles.devStateBtnActive]}
+                onPress={() => setNotificationsAllowed(!notificationsAllowed)}
+              >
+                <Text style={[styles.devStateText, !notificationsAllowed && styles.devStateTextActive]}>
+                  {notificationsAllowed ? 'Notifs Allowed' : 'Notifs Blocked'}
+                </Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.devStateBtn, !batteryOptimisationOff && styles.devStateBtnActive]}
-              onPress={() => setBatteryOptimisationOff(!batteryOptimisationOff)}
-            >
-              <Text style={[styles.devStateText, !batteryOptimisationOff && styles.devStateTextActive]}>
-                {batteryOptimisationOff ? 'Battery OK' : 'Battery Needs Attention'}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.devStateBtn, !batteryOptimisationOff && styles.devStateBtnActive]}
+                onPress={() => setBatteryOptimisationOff(!batteryOptimisationOff)}
+              >
+                <Text style={[styles.devStateText, !batteryOptimisationOff && styles.devStateTextActive]}>
+                  {batteryOptimisationOff ? 'Battery OK' : 'Battery Needs Attention'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Card 1: Panic alert (gap 4) - rule: panic alert is always loud, ignore switches for panic */}
         <View style={styles.card}>

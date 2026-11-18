@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
-import { useMonitor } from '../state/hooks';
+import { useLocationAlert } from '../state/hooks';
 
 // Helper to calculate OSM tile X, Y for lat, lon at zoom 16
 function getTileCoords(lat: number, lon: number, zoom: number = 16) {
@@ -25,15 +25,13 @@ function getTileCoords(lat: number, lon: number, zoom: number = 16) {
 }
 
 export default function LastLocationScreen() {
-  const { profile } = useMonitor();
-  const [stateType, setStateType] = useState<'hasLocation' | 'noLocation' | 'loading'>('hasLocation');
-  const [mapError, setMapError] = useState(false);
-
-  const loc = profile.lastKnownLocation;
-  const lat = loc?.latitude || 24.86073;
-  const lon = loc?.longitude || 67.00112;
+  const locationInfo = useLocationAlert();
+  const lat = locationInfo.latitude;
+  const lon = locationInfo.longitude;
+  const address = locationInfo.address;
   const zoom = 16;
   const { x: tileX, y: tileY } = getTileCoords(lat, lon, zoom);
+  const [mapError, setMapError] = useState(false);
 
   const handleOpenMaps = async () => {
     const url = Platform.OS === 'ios'
@@ -55,102 +53,65 @@ export default function LastLocationScreen() {
     <View style={styles.container}>
       <AppBar kind="stack" title="Last known location" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Dev State Switcher */}
-        <View style={styles.devMenuCard}>
-          <Text style={styles.devTitle}>Dev Location State Switcher:</Text>
-          <View style={styles.devStatesRow}>
-            {[
-              { key: 'hasLocation', label: 'Saved Location' },
-              { key: 'noLocation', label: 'No Location' },
-              { key: 'loading', label: 'Loading…' },
-            ].map((st) => (
-              <TouchableOpacity
-                key={st.key}
-                style={[styles.devStateBtn, stateType === st.key && styles.devStateBtnActive]}
-                onPress={() => {
-                  setStateType(st.key as any);
-                  setMapError(false);
-                }}
-              >
-                <Text style={[styles.devStateText, stateType === st.key && styles.devStateTextActive]}>
-                  {st.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {stateType === 'loading' ? (
-          <View style={styles.centerBox}>
-            <Text style={styles.loadingText}>Loading…</Text>
-          </View>
-        ) : stateType === 'noLocation' ? (
-          <View style={styles.card}>
-            <Text style={styles.cardHeading}>No location saved yet</Text>
-            <Text style={styles.cardBody}>
-              A location is saved with each alert when Location permission is allowed on this phone. Allow it in Settings, then the next alert will include a position.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.cardContainer}>
-            {/* Map 328 wide x 220 high, radius 16, clipped */}
-            <View style={styles.mapContainer}>
-              {/* 3x3 OSM Tile Grid */}
-              <View style={styles.tileGrid}>
-                {[-1, 0, 1].map((dy) =>
-                  [-1, 0, 1].map((dx) => {
-                    const tx = tileX + dx;
-                    const ty = tileY + dy;
-                    const tileUrl = `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
-                    return (
-                      <Image
-                        key={`${dx}-${dy}`}
-                        source={{ uri: tileUrl }}
-                        style={styles.tileImage}
-                      />
-                    );
-                  })
-                )}
-              </View>
-
-              {/* Accuracy Circle */}
-              <View style={styles.accuracyCircle} />
-
-              {/* Center Pin */}
-              <View style={styles.centerPinOuter}>
-                <View style={styles.centerPinInner} />
-              </View>
-            </View>
-
-            {/* OSM Attribution */}
-            <Text style={styles.captionMuted}>Map tiles © OpenStreetMap contributors</Text>
-
-            {/* Details Card */}
-            <View style={styles.detailsCard}>
-              <Text style={styles.alertTitleHeading}>Out of range</Text>
-              <Text style={styles.bodyText}>28 Oct 2026, 13:05</Text>
-              <Text style={styles.bodyText}>24.86073, 67.00112</Text>
-              <Text style={styles.smallMuted}>Accuracy: about 12 m</Text>
-
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={handleOpenMaps}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.primaryButtonText}>Open in Maps</Text>
-              </TouchableOpacity>
-
-              {mapError && (
-                <Text style={styles.errorText}>No maps app found on this phone.</Text>
+        <View style={styles.cardContainer}>
+          {/* Map 328 wide x 220 high, radius 16, clipped */}
+          <View style={styles.mapContainer}>
+            {/* 3x3 OSM Tile Grid */}
+            <View style={styles.tileGrid}>
+              {[-1, 0, 1].map((dy) =>
+                [-1, 0, 1].map((dx) => {
+                  const tx = tileX + dx;
+                  const ty = tileY + dy;
+                  const tileUrl = `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`;
+                  return (
+                    <Image
+                      key={`${dx}-${dy}`}
+                      source={{ uri: tileUrl }}
+                      style={styles.tileImage}
+                    />
+                  );
+                })
               )}
             </View>
 
-            {/* Footer Note */}
-            <Text style={styles.footerNote}>
-              This is where YOUR phone was when the alert happened. The wearable has no GPS; it only tells the phone how near it is.
-            </Text>
+            {/* Accuracy Circle */}
+            <View style={styles.accuracyCircle} />
+
+            {/* Center Pin */}
+            <View style={styles.centerPinOuter}>
+              <View style={styles.centerPinInner} />
+            </View>
           </View>
-        )}
+
+          {/* OSM Attribution */}
+          <Text style={styles.captionMuted}>Map tiles © OpenStreetMap contributors</Text>
+
+          {/* Details Card */}
+          <View style={styles.detailsCard}>
+            <Text style={styles.alertTitleHeading}>Out of range</Text>
+            <Text style={styles.bodyText}>28 Oct 2026, 13:05</Text>
+            <Text style={styles.bodyText}>{address}</Text>
+            <Text style={styles.bodyText}>{lat.toFixed(5)}, {lon.toFixed(5)}</Text>
+            <Text style={styles.smallMuted}>Accuracy: about 12 m</Text>
+
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleOpenMaps}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryButtonText}>Open in Maps</Text>
+            </TouchableOpacity>
+
+            {mapError && (
+              <Text style={styles.errorText}>No maps app found on this phone.</Text>
+            )}
+          </View>
+
+          {/* Footer Note */}
+          <Text style={styles.footerNote}>
+            This is where YOUR phone was when the alert happened. The wearable has no GPS; it only tells the phone how near it is.
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -166,159 +127,68 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingBottom: 40,
   },
-  devMenuCard: {
-    backgroundColor: Colors.cardBg,
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  devTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.primary,
-    marginBottom: 8,
-  },
-  devStatesRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  devStateBtn: {
-    flex: 1,
-    minHeight: 44,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: Colors.sand,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  devStateBtnActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  devStateText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textDark,
-  },
-  devStateTextActive: {
-    color: '#FFFFFF',
-  },
-  centerBox: {
-    paddingVertical: 100,
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textMuted,
-  },
-  card: {
-    backgroundColor: Colors.cardBg,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: 8,
-  },
-  cardHeading: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.textDark,
-  },
-  cardBody: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.textMuted,
-    lineHeight: 20,
-  },
   cardContainer: {
-    gap: 8,
-    alignItems: 'center',
+    gap: 12,
   },
   mapContainer: {
-    width: 328,
+    width: '100%',
     height: 220,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#E2E8F0',
+    backgroundColor: Colors.border,
     position: 'relative',
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tileGrid: {
     position: 'absolute',
-    top: -128,
-    left: -128,
-    width: 768,
-    height: 768,
+    width: '300%',
+    height: '300%',
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
   tileImage: {
-    width: 256,
-    height: 256,
+    width: '33.333%',
+    height: '33.333%',
   },
   accuracyCircle: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
     width: 90,
     height: 90,
-    marginTop: -45,
-    marginLeft: -45,
     borderRadius: 45,
-    backgroundColor: 'rgba(244, 63, 94, 0.2)',
-    borderWidth: 1.5,
-    borderColor: Colors.coral,
+    backgroundColor: 'rgba(13, 148, 136, 0.25)',
+    borderWidth: 1,
+    borderColor: Colors.primary,
   },
   centerPinOuter: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    width: 22,
-    height: 22,
-    marginTop: -11,
-    marginLeft: -11,
-    borderRadius: 11,
-    backgroundColor: Colors.coral,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(13, 148, 136, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 4,
   },
   centerPinInner: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#FFFFFF',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.primary,
   },
   captionMuted: {
     fontSize: 12,
-    fontWeight: '500',
     color: Colors.textMuted,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 4,
+    textAlign: 'center',
   },
   detailsCard: {
-    width: '100%',
     backgroundColor: Colors.cardBg,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: Colors.border,
     gap: 8,
   },
   alertTitleHeading: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: Colors.textDark,
   },
@@ -329,36 +199,32 @@ const styles = StyleSheet.create({
   },
   smallMuted: {
     fontSize: 13,
-    fontWeight: '500',
     color: Colors.textMuted,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   primaryButton: {
     backgroundColor: Colors.primary,
     borderRadius: 14,
-    height: 50,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 8,
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
   },
   errorText: {
     fontSize: 13,
-    fontWeight: '600',
     color: Colors.coral,
-    textAlign: 'center',
     marginTop: 4,
   },
   footerNote: {
     fontSize: 13,
-    fontWeight: '500',
     color: Colors.textMuted,
     textAlign: 'center',
-    paddingHorizontal: 12,
-    marginTop: 8,
+    paddingHorizontal: 8,
     lineHeight: 18,
   },
 });

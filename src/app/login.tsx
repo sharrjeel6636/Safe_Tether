@@ -97,12 +97,12 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {!showDebug ? (
+        {!__DEV__ || !showDebug ? (
           <View style={styles.contentWrapper}>
-            {/* Logo Mark (Tap to toggle Firebase ready state for testing both states) */}
+            {/* Logo Mark */}
             <TouchableOpacity
               activeOpacity={0.9}
-              onPress={() => setFirebaseReady(!firebaseReady)}
+              onPress={__DEV__ ? () => setFirebaseReady(!firebaseReady) : undefined}
               style={styles.logoMarkContainer}
             >
               <View style={styles.outerRing}>
@@ -124,7 +124,7 @@ export default function LoginScreen() {
             {!firebaseReady && (
               <TouchableOpacity
                 activeOpacity={0.9}
-                onPress={() => setFirebaseReady(true)}
+                onPress={__DEV__ ? () => setFirebaseReady(true) : undefined}
                 style={styles.warnBanner}
               >
                 <Ionicons name="alert-circle-outline" size={20} color={Colors.warning} style={styles.warnIcon} />
@@ -206,27 +206,29 @@ export default function LoginScreen() {
             </Text>
 
             {/* Toggle Firebase / Debug Navigation */}
-            <View style={styles.debugActionsRow}>
-              <TouchableOpacity
-                style={styles.debugToggle}
-                onPress={() => setFirebaseReady(!firebaseReady)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="refresh-outline" size={15} color={Colors.primary} style={{ marginRight: 4 }} />
-                <Text style={styles.debugToggleText}>
-                  Toggle Firebase State ({firebaseReady ? 'Ready' : 'Not Set Up'})
-                </Text>
-              </TouchableOpacity>
+            {__DEV__ && (
+              <View style={styles.debugActionsRow}>
+                <TouchableOpacity
+                  style={styles.debugToggle}
+                  onPress={() => setFirebaseReady(!firebaseReady)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="refresh-outline" size={15} color={Colors.primary} style={{ marginRight: 4 }} />
+                  <Text style={styles.debugToggleText}>
+                    Toggle Firebase State ({firebaseReady ? 'Ready' : 'Not Set Up'})
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.debugToggle}
-                onPress={() => setShowDebug(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="bug-outline" size={15} color={Colors.primary} style={{ marginRight: 4 }} />
-                <Text style={styles.debugToggleText}>Debug Routes</Text>
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity
+                  style={styles.debugToggle}
+                  onPress={() => setShowDebug(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="bug-outline" size={15} color={Colors.primary} style={{ marginRight: 4 }} />
+                  <Text style={styles.debugToggleText}>Debug Routes</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         ) : (
           <View style={styles.debugContainer}>

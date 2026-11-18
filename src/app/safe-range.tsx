@@ -5,9 +5,9 @@ import { Colors } from '../theme/tokens';
 import { useMonitor } from '../state/hooks';
 
 export default function SafeRangeScreen() {
-  const { profile, updateProfile } = useMonitor();
+  const { profile, updateProfile, isLinked } = useMonitor();
   const [safeRangeM, setSafeRangeM] = useState<number>(profile.safeRangeMeters || 10);
-  const isConnected = profile.connectionStatus === 'connected';
+  const isConnected = isLinked;
   const [calibrating, setCalibrating] = useState(false);
   const [calibrationSeconds, setCalibrationSeconds] = useState(10);
   const [calibratedDbm, setCalibratedDbm] = useState<number | null>(null);
@@ -87,29 +87,6 @@ export default function SafeRangeScreen() {
     <View style={styles.container}>
       <AppBar kind="stack" title="Safe range" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Dev Connection State Switcher for Calibration */}
-        <View style={styles.devMenuCard}>
-          <Text style={styles.devTitle}>Dev Connection State Switcher:</Text>
-          <View style={styles.devStatesRow}>
-            <TouchableOpacity
-              style={[styles.devStateBtn, isConnected && styles.devStateBtnActive]}
-              onPress={() => updateProfile({ connectionStatus: 'connected' })}
-            >
-              <Text style={[styles.devStateText, isConnected && styles.devStateTextActive]}>
-                Connected
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.devStateBtn, !isConnected && styles.devStateBtnActiveDanger]}
-              onPress={() => updateProfile({ connectionStatus: 'disconnected' })}
-            >
-              <Text style={[styles.devStateText, !isConnected && styles.devStateTextActive]}>
-                Disconnected
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Heading 1 */}
         <Text style={styles.heading}>Alert me when the wearable is further than:</Text>
 

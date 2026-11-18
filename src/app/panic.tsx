@@ -12,17 +12,17 @@ import {
 import { router } from 'expo-router';
 import { AppBar } from '../components/AppBar';
 import { Colors } from '../theme/tokens';
-import { useMonitor } from '../state/hooks';
+import { useMonitor, useSettings } from '../state/hooks';
 
 export default function PanicScreen() {
-  const { profile, updateProfile } = useMonitor();
-  const isConnected = profile.connectionStatus === 'connected';
+  const { isLinked } = useMonitor();
+  const { childName } = useSettings();
+  const isConnected = isLinked;
 
-  // Dev interactive states for testing locating states and errors
   const [isLocating, setIsLocating] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const name = profile.name || 'Leo';
+  const name = childName;
   const timestampText = '28 Oct 2026, 14:32';
   const zoneText = isConnected
     ? 'Last known zone: Medium'
@@ -74,39 +74,6 @@ export default function PanicScreen() {
       <AppBar kind="panic" title="Panic alert" />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Dev State Switcher (to test connected/disconnected & locating states) */}
-        <View style={styles.devMenuCard}>
-          <Text style={styles.devTitle}>Dev State Switcher:</Text>
-          <View style={styles.devStatesRow}>
-            <TouchableOpacity
-              style={[styles.devStateBtn, isConnected && styles.devStateBtnActive]}
-              onPress={() => updateProfile({ connectionStatus: isConnected ? 'disconnected' : 'connected' })}
-            >
-              <Text style={[styles.devStateText, isConnected && styles.devStateTextActive]}>
-                {isConnected ? 'Connected' : 'Disconnected'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.devStateBtn, isLocating && styles.devStateBtnActive]}
-              onPress={() => setIsLocating(!isLocating)}
-            >
-              <Text style={[styles.devStateText, isLocating && styles.devStateTextActive]}>
-                {isLocating ? 'Finding Location…' : 'Location Ready'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.devStateBtn, hasError && styles.devStateBtnActive]}
-              onPress={() => setHasError(!hasError)}
-            >
-              <Text style={[styles.devStateText, hasError && styles.devStateTextActive]}>
-                {hasError ? 'Error On' : 'No Error'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* Main Card (content centred, gap 8, coralSoft fill, 1 px coral border) */}
         <View style={styles.panicCard}>
           <Text style={styles.cardTitle}>{name} pressed the panic button</Text>
