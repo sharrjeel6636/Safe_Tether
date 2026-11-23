@@ -1,89 +1,75 @@
+// src/data/auth.ts
+// Firebase Auth, email and password only (FR1, FR21). Firebase keeps the session,
+// so the parent stays logged in after a restart.
 import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
   EmailAuthProvider,
-  reauthenticateWithCredential,
+  createUserWithEmailAndPassword,
   deleteUser,
+  getAuth,
+  onAuthStateChanged,
+  reauthenticateWithCredential,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
 } from '@react-native-firebase/auth';
-import { clearCloudData } from './remote';
 
-export function isFirebaseConfigured(): boolean {
+export interface AuthUser {
+  uid: string;
+  email: string | null;
+}
+
+/**
+ * Firebase needs google-services.json (Appendix C.1). Without it getAuth() throws; the app then
+ * still runs in "without an account" mode, which is useful for testing Bluetooth first.
+ */
+export function firebaseReady(): boolean {
   try {
-    return !!getAuth();
+    getAuth();
+    return true;
   } catch {
     return false;
   }
 }
 
-function logAuthError(where: string, e: any) {
-  console.log(`AUTH ERROR [${where}]:`, e?.code, e?.message);
-}
-
-export function getAuthErrorMessage(e: any): string {
-  const code = e?.code || (typeof e === 'string' ? e : '');
-  const cleanCode = typeof code === 'string' ? code.replace(/^auth\//, '') : '';
-  switch (cleanCode) {
-    case 'invalid-email':
-      return 'Email address is not valid.';
-    case 'user-not-found':
-    case 'wrong-password':
-    case 'invalid-credential':
-      return 'Email or password is incorrect.';
-    case 'email-already-in-use':
-      return 'An account with this email already exists.';
-    case 'weak-password':
-      return 'Password is too weak (use at least 6 characters).';
-    case 'network-request-failed':
-      return 'No internet connection.';
-    case 'too-many-requests':
-      return 'Too many attempts. Try again later.';
-    case 'operation-not-allowed':
-      return 'Email/Password sign-in is not enabled in Firebase.';
-    case 'internal-error':
-      return 'Firebase internal error. Check SHA-1/SHA-256 and google-services.json.';
-    default:
-      return `Authentication error: ${e?.code || code || 'unknown'}`;
-  }
-}
-
-export async function signInWithEmail(email: string, pass: string) {
+export function currentUser(): AuthUser | null {
   try {
-    const cred = await signInWithEmailAndPassword(getAuth(), email.trim(), pass);
-    return cred.user;
-  } catch (e) {
-    logAuthError('signIn', e);
-    throw e;
+    const u = getAuth().currentUser;
+    return u === null ? null : { uid: u.uid, email: u.email };
+  } catch {
+    return null;
   }
 }
 
-export async function signUpWithEmail(email: string, pass: string) {
+/** Calls back with the user now and on every change; returns the unsubscribe function. */
+export function watchAuth(cb: (u: AuthUser | null) => void): () => void {
   try {
-    const cred = await createUserWithEmailAndPassword(getAuth(), email.trim(), pass);
-    return cred.user;
-  } catch (e) {
-    logAuthError('signUp', e);
-    throw e;
+    return onAuthStateChanged(getAuth(), (u) => cb(u === null ? null : { uid: u.uid, email: u.email }));
+  } catch {
+    cb(null);
+    return () => undefined;
   }
 }
 
-export async function signOutUser() {
-  await signOut(getAuth());
-}
+export const signIn = (email: string, password: string) =>
+  signInWithEmailAndPassword(getAuth(), email.trim(), password);
 
-export async function deleteAccountWithPassword(password: string) {
+export const register = (email: string, password: string) =>
+  createUserWithEmailAndPassword(getAuth(), email.trim(), password);
+
+export const resetPassword = (email: string) => sendPasswordResetEmail(getAuth(), email.trim());
+
+export const logOut = () => signOut(getAuth());
+
+/** Deleting an account is sensitive: Firebase wants a recent login, so ask for the password again. */
+export async function reauthenticate(password: string): Promise<void> {
   const user = getAuth().currentUser;
-  if (!user || !user.email) {
-    throw new Error('No authenticated user found.');
-  }
-  try {
-    const credential = EmailAuthProvider.credential(user.email, password);
-    await reauthenticateWithCredential(user, credential);
-    await clearCloudData(user.uid);
-    await deleteUser(user);
-  } catch (e) {
-    logAuthError('deleteAccount', e);
-    throw e;
-  }
+  if (user === null || user.email === null) throw new Error('Not signed in');
+  await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
 }
+
+export async function deleteAuthUser(): Promise<void> {
+  const user = getAuth().currentUser;
+  if (user !== null) await deleteUser(user);
+}
+
+export { friendlyAuthError } from './authMessages';

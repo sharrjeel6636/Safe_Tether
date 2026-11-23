@@ -1,57 +1,30 @@
-import { bootstrap as initBootstrap } from './bootstrap';
-import { clearCloudData } from './data/remote';
+// src/runtime.ts
+// The one real monitor: real Bluetooth, real notifications, real database.
+import { insertAlert, setAlertLocation } from './data/alertRepo';
+import { syncNow } from './data/sync';
+import { BlePlxLink } from './services/bleService';
+import { showForeground, stopForeground } from './services/foregroundService';
+import { currentFix } from './services/location';
+import { MonitorRuntime } from './services/monitorRuntime';
+import { showAlert } from './services/notifier';
+import { checkPermissions } from './services/permissions';
+import { useAlerts } from './state/useAlerts';
+import { useMonitor } from './state/useMonitor';
 
-let isRunning = false;
-let buzzTimer: any = null;
+/** Also used by the Connections screen (scan) and the Bluetooth-off banner. */
+export const ble = new BlePlxLink();
 
-export const runtime = {
-  async start(): Promise<void> {
-    if (isRunning) return;
-    isRunning = true;
-    await initBootstrap();
-    console.log('SafeTether runtime started.');
-  },
-  async stop(): Promise<void> {
-    isRunning = false;
-    if (buzzTimer) {
-      clearInterval(buzzTimer);
-      buzzTimer = null;
-    }
-    console.log('SafeTether runtime stopped.');
-  },
-  buzz(seconds: number): void {
-    if (buzzTimer) clearInterval(buzzTimer);
-    let left = seconds;
-    console.log(`Buzzing wearable for ${seconds}s`);
-    buzzTimer = setInterval(() => {
-      left--;
-      if (left <= 0) {
-        clearInterval(buzzTimer);
-        buzzTimer = null;
-      }
-    }, 1000);
-  },
-  stopBuzz(): void {
-    if (buzzTimer) {
-      clearInterval(buzzTimer);
-      buzzTimer = null;
-    }
-    console.log('Stopped buzzing wearable.');
-  },
-};
-
-export const ble = {
-  async scan(): Promise<Array<{ id: string; name: string; rssi?: number; uuid?: string }>> {
-    return [];
-  },
-  async pair(deviceId: string): Promise<void> {
-    console.log(`Paired with device ${deviceId}`);
-  },
-  async forget(): Promise<void> {
-    console.log('Forgot Bluetooth wearable device.');
-  },
-};
-
-export async function startRuntime(): Promise<void> {
-  await runtime.start();
-}
+export const runtime = new MonitorRuntime({
+  link: ble,
+  checkPermissions,
+  showForeground,
+  stopForeground,
+  showAlert,
+  currentFix,
+  insertAlert,
+  setAlertLocation,
+  sync: syncNow,
+  onSnapshot: (s) => useMonitor.getState().setSnapshot(s),
+  onAlertsChanged: () => void useAlerts.getState().refresh(),
+  onForegroundState: (ok) => useMonitor.getState().setForeground(ok),
+});

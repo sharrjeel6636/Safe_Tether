@@ -1,31 +1,27 @@
-import { getAlerts, saveAlert, getProfileStorage, saveProfileStorage } from './database';
-import { getAlertsRemote, saveAlertRemote, getProfileRemote, saveProfileRemote } from './remote';
+// src/data/sync.ts
+// Offline-first sync: the phone database always has the alert first; this copies it to Firestore
+// when possible. Errors are swallowed on purpose: a failed sync must never disturb the parent,
+// it simply runs again later.
+import { markSynced, unsynced } from './alertRepo';
+import { currentUser } from './auth';
+import { pullAlerts, pushAlert } from './remote';
 
-export async function syncData(userId: string): Promise<void> {
+let busy = false;
+
+export async function syncNow(deviceId: string | null, localOnly: boolean): Promise<void> {
+  if (busy || localOnly || currentUser() === null) return;
+  busy = true;
   try {
-    const localProfile = await getProfileStorage();
-    const remoteProfile = await getProfileRemote(userId);
-
-    if (localProfile && !remoteProfile) {
-      await saveProfileRemote(userId, localProfile);
-    } else if (remoteProfile && !localProfile) {
-      await saveProfileStorage(remoteProfile);
-    }
-
-    const localAlerts = await getAlerts();
-    const remoteAlerts = await getAlertsRemote(userId);
-
-    const remoteIds = new Set(remoteAlerts.map((a) => a.id));
-    for (const localAlert of localAlerts) {
-      if (!remoteIds.has(localAlert.id)) {
-        await saveAlertRemote(userId, localAlert);
+    if (deviceId !== null) {
+      for (const row of await unsynced()) {
+        const remoteId = await pushAlert(deviceId, row);
+        await markSynced(row.id, remoteId);
       }
     }
-
-    for (const remoteAlert of remoteAlerts) {
-      await saveAlert(remoteAlert);
-    }
-  } catch (error) {
-    console.error('Sync error:', error);
+    await pullAlerts();
+  } catch (e) {
+    console.warn('[sync] will retry later', e);
+  } finally {
+    busy = false;
   }
 }

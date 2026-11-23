@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn()       { return request.auth != null; }
+    function ownsExisting()   { return signedIn() && resource.data.ownerUid == request.auth.uid; }
+    // A read or delete of a document that does not exist has resource == null; without this
+    // the app gets "permission denied" instead of "not found" (e.g. un-pairing twice).
+    function ownsOrMissing()  { return signedIn() && (resource == null || resource.data.ownerUid == request.auth.uid); }
+    function claimsForSelf()  { return signedIn() && request.resource.data.ownerUid == request.auth.uid; }
+    function keepsOwner()     { return request.resource.data.ownerUid == resource.data.ownerUid; }
+
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // children/{uid}: one child profile per parent account in this version
+    match /children/{childId} {
+      allow create: if claimsForSelf() && childId == request.auth.uid;
+      allow update: if ownsExisting() && keepsOwner();
+      allow read, delete: if ownsOrMissing();
+    }
+
+    // devices/{wearableId}: "create" only works while the document does not exist,
+    // so a second parent cannot claim a wearable that is already paired.
+    match /devices/{deviceId} {
+      allow create: if claimsForSelf();
+      allow update: if ownsExisting() && keepsOwner();
+      allow read, delete: if ownsOrMissing();
+    }
+
+    // alerts/{alertId}: the id is built from wearable + time + type, so the app may upload the
+    // same alert twice. The second write is allowed only if nothing but createdAt changes.
+    match /alerts/{alertId} {
+      allow create: if claimsForSelf()
+                    && request.resource.data.type in
+                       ['panic', 'out_of_range', 'connection_lost', 'low_battery', 'buzzer'];
+      allow update: if ownsExisting() && keepsOwner()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['createdAt']);
+      allow read, delete: if ownsOrMissing();
+    }
+  }
+}
