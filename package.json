@@ -1,7 +1,7 @@
 {
   "name": "child_safety_project",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@notifee/react-native": "^9.1.8",
